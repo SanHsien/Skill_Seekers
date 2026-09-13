@@ -1,0 +1,72 @@
+name: "🪲 Bug Report"
+description: "回報 Skill_Seekers 維護型 fork、CLI 腳本或 MCP 工具的問題"
+labels: ["bug"]
+body:
+  - type: "markdown"
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > 提交問題前，請先確認：
+        > 1. 問題在最新 `main` 仍可重現。
+        > 2. 請勿在此附上包含機密資料、個人個資或受保護版權的內容。若涉及安全性，請走 [Security Advisory](https://github.com/SanHsien/Skill_Seekers/security/advisories/new)。
+
+  - type: "dropdown"
+    id: "module"
+    attributes:
+      label: "發生問題的模組或功能"
+      description: "請選擇是在使用哪項功能時發生問題"
+      options:
+        - "CLI 命令列工具 (skill-seekers / cli)"
+        - "MCP 伺服器與工具 (mcp/)"
+        - "文件抓取與轉換器 (scrapers/parsers)"
+        - "技能打包與匯出 (packaging/upload)"
+        - "Windows 本機維護環境 (tools/dev_check.ps1)"
+        - "其他"
+    validations:
+      required: true
+
+  - type: "dropdown"
+    id: "os"
+    attributes:
+      label: "作業系統環境"
+      options:
+        - "Windows 11 原生 (PowerShell)"
+        - "Windows 10"
+        - "Ubuntu / Linux"
+        - "macOS"
+    validations:
+      required: true
+
+  - type: "input"
+    id: "python-version"
+    attributes:
+      label: "Python 版本"
+      placeholder: "例如：Python 3.14.7 或 3.12"
+    validations:
+      required: true
+
+  - type: "textarea"
+    id: "description"
+    attributes:
+      label: "問題描述"
+      description: "簡要清楚地說明問題"
+    validations:
+      required: true
+
+  - type: "textarea"
+    id: "reproduction"
+    attributes:
+      label: "重現步驟或指令"
+      description: "請提供可重現問題的指令或步驟"
+      placeholder: |
+        python -m skill_seekers.cli.main --help
+    validations:
+      required: true
+
+  - type: "textarea"
+    id: "expected"
+    attributes:
+      label: "預期行為與實際行為"
+      description: "預期結果為何？實際發生了什麼（請附上完整錯誤輸出與 traceback）？"
+    validations:
+      required: true
