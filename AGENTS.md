@@ -13,11 +13,12 @@
 ## 硬閘門與邊界規範
 
 - **PR、push、release 絕不打回上游**：所有操作只打 `SanHsien/Skill_Seekers`。除非維護者在當次對話明確要求回貢，否則嚴禁向上游開 PR。每個 clone 必須先跑 `gh repo set-default SanHsien/Skill_Seekers` 並以 `gh repo set-default --view` 確認。
+- **保留上游痕跡**：不要移除 `upstream` remote、原作者署名或 MIT License 授權標示。核心程式在 `src/`，以上游為準。
 - **改動不漫遊專案目錄外**：嚴禁讀寫使用者個人目錄或外部專案。
-- **無敏感資料**：API 金鑰、Token、私鑰與個人個資嚴禁進代碼、指令列或提交。
-- **回報前必須實證**：回報「完成 / 修好 / 測試通過」之前，必須實際在 Windows 原生環境執行 `pwsh -NoProfile -File tools\dev_check.ps1` 並回貼完整輸出。
+- **無敏感資料**：API 金鑰、Token、私鑰與個人個資嚴禁進代碼、指令列或提交；測試檔案、使用者專有文件與 `.env` 一律不可提交。
+- **回報前必須實證**：回報「完成 / 修好 / 測試通過」之前，必須實際在 Windows 原生環境執行 `pwsh -NoProfile -File tools\dev_check.ps1` 並回貼完整輸出。不要把此門禁改成完整產品依賴安裝。
 - **不虛假過關**：嚴禁註解掉測試、盲目捕獲例外（`except Exception: pass`）或偽造假資料。
-- **回覆語系**：回覆一律使用繁體中文；術語與程式碼保持英文原文。先講結論再講細節。
+- **回覆語系**：回覆一律使用繁體中文；術語與程式碼保持英文原文。先講結論再講細節，直接交付可驗證結果。
 
 ## 開發與門禁指令
 
