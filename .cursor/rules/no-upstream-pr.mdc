@@ -1,0 +1,20 @@
+---
+description: PR、push、release 一律指向 SanHsien/Skill_Seekers；回貢上游需要當次對話明確同意
+alwaysApply: true
+---
+
+# 對外只打本 fork
+
+本 repo fork 自 [`yusufkaraaslan/Skill_Seekers`](https://github.com/yusufkaraaslan/Skill_Seekers)（MIT）。
+PR、push、release 一律指向 `SanHsien/Skill_Seekers`。
+
+**根因是機制不是粗心：** `gh` 在 fork clone 的預設 repo 就是上游，裸跑 `gh pr create` 必然打上去。
+
+```powershell
+gh repo set-default SanHsien/Skill_Seekers    # 每個 clone 先跑一次
+gh repo set-default --view                   # 必須回 SanHsien/Skill_Seekers
+```
+
+開 PR 時明寫 `--repo SanHsien/Skill_Seekers --base main --head <branch>`，絕不依賴工具預設。
+
+建完必須讀回指令輸出的 URL；owner 不是 `SanHsien` 就立刻關閉、留言道歉說明，再對 origin 重開並主動向維護者回報。

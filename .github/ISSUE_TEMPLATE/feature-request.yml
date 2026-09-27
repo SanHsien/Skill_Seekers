@@ -1,0 +1,18 @@
+name: "💡 Feature Request"
+description: "提出 Skill_Seekers 的功能改進、數據源支援或維護建議"
+labels: ["enhancement"]
+body:
+  - type: "textarea"
+    id: "feature"
+    attributes:
+      label: "需求或功能建議"
+      description: "清楚說明希望新增或改善的功能"
+    validations:
+      required: true
+  - type: "textarea"
+    id: "context"
+    attributes:
+      label: "使用情境與價值"
+      description: "這個功能如何幫助 AI Agent 技能與知識庫轉換層的使用或 Windows 本機開發體驗？"
+    validations:
+      required: true
