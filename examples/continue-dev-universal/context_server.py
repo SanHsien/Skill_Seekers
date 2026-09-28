@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import re
 from pathlib import Path
 from functools import lru_cache
 from typing import Dict, List
@@ -51,6 +52,10 @@ def load_framework_docs(framework: str) -> str:
     Raises:
         FileNotFoundError: If documentation not found
     """
+    # Sanitize framework identifier to prevent path traversal
+    if not framework or not re.match(r"^[a-zA-Z0-9_\-]+$", framework):
+        raise ValueError(f"Invalid framework identifier: {framework!r}")
+
     # Try multiple possible locations
     possible_paths = [
         Path(f"output/{framework}-markdown/SKILL.md"),

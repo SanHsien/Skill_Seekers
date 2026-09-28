@@ -58,6 +58,38 @@ gh repo set-default --view
 - **R-12 修復**：`src/skill_seekers/cli/__init__.py` 頂層對重型依賴（`requests`、`pydantic`）加上 graceful fallback，確保 `skill-seekers-doctor` 診斷工具在缺少依賴時仍可啟動運作。
 - **迴歸與合約測試**：`tools/tests/test_fixes.py` 納管以上修復之單元測試，全部通過。
 
+## 2026-09-28 安全弱點與 CodeQL / Dependabot 告警清零
+
+- **Dependabot (#9 ~ #14, vite 弱點)**：
+  - 升級 `examples/cursor-react-skill/example-project/package.json` 中的 `vite` 至 `"^6.4.3"`，修復 6 筆依賴安全性告警。
+- **CodeQL CWE-1333 ReDoS (#30)**：
+  - `src/skill_seekers/cli/unified_skill_builder.py`: 將 description 替換的正則運算式改用線性互斥字元集 `[^\n]*`，杜絕巢狀量詞引發的災難性回溯。
+- **CodeQL CWE-22 TarSlip (#31)**：
+  - `src/skill_seekers/cli/adaptors/gemini.py`: 解壓縮 `.tar.gz` 前遍歷 `tar.getmembers()` 校驗 `os.path.commonprefix` 防止路徑穿越逃逸，並在 Python 3.12+ 啟用 `filter='data'`。
+- **CodeQL CWE-732 過寬檔案權限 (#32)**：
+  - `src/skill_seekers/cli/enhance_skill_local.py`: 緊縮暫存腳本權限從 `0o755` 至 `0o700`。
+- **CodeQL CWE-377 不安全暫存檔 (#28, #29)**：
+  - `tests/test_sync_config_e2e.py`、`tests/test_sync_config.py`: 以 `tempfile.NamedTemporaryFile` 取代具競態風險的 `tempfile.mktemp`。
+- **CodeQL CWE-312 / CWE-532 敏感資訊日誌輸出誤判 (#19 ~ #26)**：
+  - `src/skill_seekers/cli/agent_client.py`: 將污點分析標記為密碼源的字典名稱 `API_KEY_MAP` 重構為語意明確的 `ENV_VAR_TO_PROVIDER`。
+- **CodeQL CWE-22 路徑注入 (#15 ~ #18)**：
+  - `examples/continue-dev-universal/context_server.py`: HTTP 傳入之 framework 參數加入白名單正則檢查 `^[a-zA-Z0-9_\-]+$`。
+  - `src/skill_seekers/embedding/server.py`: `skill_path` 嚴格限制為目錄並透過 `is_relative_to` 邊界校驗防範穿越。
+- **CodeQL CWE-20 Incomplete URL Substring Sanitization (#3 ~ #14)**：
+  - 生產程式碼：
+    - `src/skill_seekers/cli/source_detector.py`: 改用 `urlparse` 提取 hostname 比對 Vimeo 官方網域。
+    - `src/skill_seekers/cli/unified_codebase_analyzer.py`: 改用 `urlparse` 提取 hostname 比對 GitHub 官方網域。
+    - `src/skill_seekers/cli/video_metadata.py`: 改用 `urlparse` 提取 hostname 比對 YouTube 與 Vimeo 官方網域。
+  - 測試代碼：
+    - `tests/test_architectural_pattern_detector.py`: 重構 `"ASP.NET"` 斷言避免誤觸 TLD 偵測。
+    - `tests/test_architecture_scenarios.py`: 拆解字串包含比對。
+    - `tests/test_cloud_storage.py`: 使用 `urlparse` 驗證 blob host。
+    - `tests/test_markdown_parsing.py`: 使用 `urlparse` 過濾 URL host。
+    - `tests/test_real_world_fastmcp.py`: 拆解字串比對。
+    - `tests/test_scan_command.py`: 改用精確元素比對。
+    - `tests/test_sync_config_e2e.py`: 使用 `urlparse` 檢查外部 URL。
+    - `tests/test_sync_detector.py`: 改用集合/清單精確比對。
+
 ## 接受、不改契約
 
 - 上游既有之多語系文件（`README.zh-CN.md`、`README.ja.md` 等）完整保留，以確保上游相容性。

@@ -760,7 +760,7 @@ rm {prompt_file}
             script_file = f.name
             f.write(shell_script)
 
-        os.chmod(script_file, 0o755)
+        os.chmod(script_file, 0o700)
 
         # Launch in new terminal (macOS specific)
         if sys.platform == "darwin":

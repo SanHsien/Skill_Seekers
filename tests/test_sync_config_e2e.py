@@ -15,6 +15,7 @@ import threading
 import unittest
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -131,10 +132,9 @@ def _start_server() -> tuple[HTTPServer, int]:
 
 def _write_config(config: dict) -> Path:
     """Write a config dict to a temp JSON file and return its path."""
-    tmp = tempfile.mktemp(suffix=".json")
-    with open(tmp, "w", encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
         json.dump(config, f, indent=2)
-    return Path(tmp)
+        return Path(f.name)
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +191,7 @@ class TestSyncConfigE2E(unittest.TestCase):
         )
 
         self.assertFalse(
-            any("github.com" in u for u in discovered),
+            any((urlparse(u).hostname or "").endswith("github.com") for u in discovered),
             "External URLs should not be discovered",
         )
 

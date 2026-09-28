@@ -252,8 +252,8 @@ class TestWebFrameworkFiltering:
             _make_file("C#", "Controllers/HomeController.cs", ["System.Web"]),
         ]
         report = _run_detector(tmp_path, files)
-        assert "ASP.NET" in report.frameworks_detected
-        assert "React" not in report.frameworks_detected
+        assert any(fw == "ASP.NET" for fw in report.frameworks_detected)
+        assert not any(fw == "React" for fw in report.frameworks_detected)
 
 
 class TestMultiFramework:

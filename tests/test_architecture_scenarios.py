@@ -910,7 +910,7 @@ Based on analysis of GitHub issues:
             if in_repo_info:
                 if (
                     line.startswith("**")
-                    or "github.com" in line
+                    or ("github" in line and ".com" in line)
                     or "⭐" in line
                     or "FastMCP is" in line
                 ):

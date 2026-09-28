@@ -360,10 +360,9 @@ class TestSyncConfigIntegration(unittest.TestCase):
     """Test the full sync_config workflow with mocked HTTP."""
 
     def _write_config(self, config: dict) -> Path:
-        tmp = tempfile.mktemp(suffix=".json")  # noqa: SIM115
-        with open(tmp, "w", encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
             json.dump(config, f, indent=2)
-        return Path(tmp)
+            return Path(f.name)
 
     @patch("skill_seekers.cli.sync_config.discover_urls")
     def test_dry_run_does_not_modify_file(self, mock_discover):

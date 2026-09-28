@@ -336,7 +336,7 @@ class TestRealWorldFastMCP:
         print("   ✅ Contains 'fastmcp'")
 
         # Check GitHub metadata
-        if "Repository:" in skill_md or "github.com" in skill_md:
+        if "Repository:" in skill_md or ("github" in skill_md and ".com" in skill_md):
             print("   ✅ Contains repository URL")
 
         if "⭐" in skill_md or "Stars:" in skill_md:

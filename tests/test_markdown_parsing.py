@@ -11,6 +11,7 @@ Tests the following functionality:
 import os
 import shutil
 import unittest
+from urllib.parse import urlparse
 
 
 class TestMarkdownContentExtraction(unittest.TestCase):
@@ -339,7 +340,7 @@ API: https://example.com/api/reference.md
         # Must not raise ValueError
         urls = parser.extract_urls()
         # Should still extract the valid URLs
-        valid = [u for u in urls if "example.com" in u]
+        valid = [u for u in urls if (urlparse(u).hostname or "").endswith("example.com")]
         self.assertGreaterEqual(len(valid), 2)
 
     def test_deduplicate_urls(self):

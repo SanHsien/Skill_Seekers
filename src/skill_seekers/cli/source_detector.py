@@ -508,7 +508,9 @@ class SourceDetector:
             )
 
         # Vimeo patterns
-        if "vimeo.com/" in lower:
+        parsed_v = urlparse(source if "://" in source else f"https://{source}")
+        v_host = (parsed_v.hostname or "").lower()
+        if v_host == "vimeo.com" or v_host.endswith(".vimeo.com"):
             return SourceInfo(
                 type="video",
                 parsed={"url": source, "source_kind": "url"},

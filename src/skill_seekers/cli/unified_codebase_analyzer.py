@@ -15,6 +15,7 @@ Analysis modes:
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from skill_seekers.cli.github_fetcher import GitHubThreeStreamFetcher
 
@@ -399,7 +400,12 @@ class UnifiedCodebaseAnalyzer:
         Returns:
             True if GitHub URL, False otherwise
         """
-        return "github.com" in source
+        try:
+            parsed = urlparse(source if "://" in source else f"https://{source}")
+            host = (parsed.hostname or "").lower()
+            return host == "github.com" or host.endswith(".github.com")
+        except Exception:
+            return False
 
     def list_files(self, directory: Path) -> list[dict]:
         """

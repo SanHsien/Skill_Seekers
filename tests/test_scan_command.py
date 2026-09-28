@@ -1290,7 +1290,7 @@ class TestProbeUrls:
         # Returns config with _url_unverified stamped so user sees what to fix.
         assert cfg is not None
         assert "_url_unverified" in cfg["metadata"]
-        assert "https://badurl.invalid" in cfg["metadata"]["_url_unverified"]
+        assert any(u == "https://badurl.invalid" for u in cfg["metadata"]["_url_unverified"])
 
 
 class TestMaxAiGenerationsCap:

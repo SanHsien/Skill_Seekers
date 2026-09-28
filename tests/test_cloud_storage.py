@@ -7,6 +7,7 @@ import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
+from urllib.parse import urlparse
 
 from skill_seekers.cli.storage import (
     get_storage_adaptor,
@@ -340,7 +341,7 @@ def test_azure_upload_file():
             # Test upload
             result = adaptor.upload_file(tmp_path, "test.txt")
 
-            assert "test.blob.core.windows.net" in result
+            assert urlparse(result).hostname == "test.blob.core.windows.net"
             mock_blob_client.upload_blob.assert_called_once()
         finally:
             Path(tmp_path).unlink()

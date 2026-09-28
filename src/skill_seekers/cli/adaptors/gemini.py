@@ -212,9 +212,18 @@ See the references directory for complete documentation with examples and best p
             import tempfile
 
             with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract archive
+                # Extract archive safely against directory traversal (TarSlip)
                 with tarfile.open(package_path, "r:gz") as tar:
-                    tar.extractall(temp_dir)
+                    for member in tar.getmembers():
+                        member_path = os.path.join(temp_dir, member.name)
+                        abs_dir = os.path.abspath(temp_dir)
+                        abs_target = os.path.abspath(member_path)
+                        if os.path.commonprefix([abs_dir, abs_target]) != abs_dir:
+                            raise ValueError(f"Path traversal detected in archive: {member.name}")
+                    if hasattr(tarfile, "data_filter"):
+                        tar.extractall(temp_dir, filter="data")
+                    else:
+                        tar.extractall(temp_dir)
 
                 temp_path = Path(temp_dir)
 

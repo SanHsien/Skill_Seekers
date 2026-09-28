@@ -245,8 +245,7 @@ class TestHeaderChanges:
             },
         )
 
-        assert "https://a.com" in changed
-        assert "https://b.com" not in changed
+        assert changed == ["https://a.com"]
 
 
 class TestHeaderChangeNoValidators:

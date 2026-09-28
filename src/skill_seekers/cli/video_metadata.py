@@ -8,6 +8,7 @@ import hashlib
 import logging
 import os
 import re
+from urllib.parse import urlparse
 
 from skill_seekers.cli.video_models import (
     Chapter,
@@ -83,11 +84,15 @@ def detect_video_source_type(url_or_path: str) -> VideoSourceType:
     if os.path.isdir(url_or_path):
         return VideoSourceType.LOCAL_DIRECTORY
 
-    url_lower = url_or_path.lower()
-    if "youtube.com" in url_lower or "youtu.be" in url_lower:
-        return VideoSourceType.YOUTUBE
-    if "vimeo.com" in url_lower:
-        return VideoSourceType.VIMEO
+    try:
+        parsed = urlparse(url_or_path if "://" in url_or_path else f"https://{url_or_path}")
+        host = (parsed.hostname or "").lower()
+        if host in ("youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com") or host.endswith(".youtube.com"):
+            return VideoSourceType.YOUTUBE
+        if host == "vimeo.com" or host.endswith(".vimeo.com"):
+            return VideoSourceType.VIMEO
+    except Exception:
+        pass
 
     return VideoSourceType.LOCAL_FILE
 

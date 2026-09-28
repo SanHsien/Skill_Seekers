@@ -602,7 +602,7 @@ This skill synthesizes knowledge from multiple sources:
         # Handle both single-line and multiline YAML description values
         desc = self.description[:1024] if len(self.description) > 1024 else self.description
         frontmatter = re.sub(
-            r"^description:.*(?:\n[ \t]+.*)*$",
+            r"^description:[^\n]*(?:\n[ \t]+[^\n]*)*",
             f"description: {desc}",
             frontmatter,
             count=1,

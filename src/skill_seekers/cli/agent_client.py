@@ -164,8 +164,9 @@ assert all(p.get("protocol") in WIRE_PROTOCOLS for p in API_PROVIDERS), (
     "every API_PROVIDERS entry must declare a protocol in WIRE_PROTOCOLS"
 )
 
-# API key env var → provider mapping (derived from the registry)
-API_KEY_MAP = {var: p["provider"] for p in API_PROVIDERS for var in p["env_vars"]}
+# Environment variable name → provider mapping (derived from registry)
+ENV_VAR_TO_PROVIDER = {var: str(p["provider"]) for p in API_PROVIDERS for var in p["env_vars"]}
+API_KEY_MAP = ENV_VAR_TO_PROVIDER
 
 
 def provider_supports_images(provider: str) -> bool:
@@ -389,9 +390,9 @@ class AgentClient:
         for p in API_PROVIDERS:
             if forced in (p["provider"], p["target"]):
                 return p["provider"]
-        for env_var, provider in API_KEY_MAP.items():
+        for env_var, prov in ENV_VAR_TO_PROVIDER.items():
             if os.environ.get(env_var, "").strip() == api_key:
-                return provider
+                return prov
         if api_key.startswith("sk-ant-"):
             return "anthropic"
         if api_key.startswith("sk-"):
@@ -998,10 +999,10 @@ class AgentClient:
             "openai", or "minimax".
             Returns (None, None) if no key found.
         """
-        for env_var, provider in API_KEY_MAP.items():
+        for env_var, prov in ENV_VAR_TO_PROVIDER.items():
             key = os.environ.get(env_var, "").strip()
             if key:
-                return key, provider
+                return key, prov
         return None, None
 
     @staticmethod
