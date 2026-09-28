@@ -15,6 +15,7 @@ import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 
@@ -136,10 +137,15 @@ class GitHubThreeStreamFetcher:
                 return parts[0], parts[1]
 
         # Handle HTTPS URLs
-        if "github.com/" in url:
-            parts = url.split("github.com/")[-1].split("/")
-            if len(parts) >= 2:
-                return parts[0], parts[1]
+        try:
+            parsed = urlparse(url if "://" in url else f"https://{url}")
+            host = (parsed.hostname or "").lower()
+            if host == "github.com" or host.endswith(".github.com"):
+                parts = [p for p in parsed.path.strip("/").split("/") if p]
+                if len(parts) >= 2:
+                    return parts[0], parts[1]
+        except Exception:
+            pass
 
         raise ValueError(f"Invalid GitHub URL: {url}")
 

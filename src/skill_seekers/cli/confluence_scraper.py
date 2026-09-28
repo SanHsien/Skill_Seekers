@@ -37,6 +37,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from skill_seekers.cli.defaults import DEFAULTS
 from skill_seekers.cli.skill_converter import SkillConverter
@@ -541,7 +542,12 @@ class ConfluenceToSkillConverter(SkillConverter):
         Returns:
             True if the URL looks like an Atlassian Cloud instance.
         """
-        return "atlassian.net" in self.base_url.lower()
+        try:
+            parsed = urlparse(self.base_url if "://" in self.base_url else f"https://{self.base_url}")
+            host = (parsed.hostname or "").lower()
+            return host == "atlassian.net" or host.endswith(".atlassian.net")
+        except Exception:
+            return False
 
     # ──────────────────────────────────────────────────────────────────────
     # Export extraction

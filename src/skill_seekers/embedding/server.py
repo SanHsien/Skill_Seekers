@@ -240,21 +240,28 @@ if FASTAPI_AVAILABLE:
             HTTPException: If skill embedding fails
         """
         try:
-            skill_path = Path(request.skill_path).expanduser().resolve()
+            base_dir = os.path.realpath(os.getcwd())
+            normalized_path = os.path.realpath(os.path.normpath(request.skill_path))
+            if not normalized_path.startswith(base_dir):
+                raise HTTPException(
+                    status_code=403, detail="Skill path outside allowed directory"
+                )
 
+            skill_path = Path(normalized_path)
             if not skill_path.exists() or not skill_path.is_dir():
                 raise HTTPException(
                     status_code=404, detail=f"Skill path not found: {request.skill_path}"
                 )
 
             # Read SKILL.md safely within the validated directory
-            skill_md = (skill_path / "SKILL.md").resolve()
-            if not skill_md.is_relative_to(skill_path) or not skill_md.exists() or not skill_md.is_file():
+            skill_md = os.path.normpath(os.path.join(normalized_path, "SKILL.md"))
+            if not skill_md.startswith(normalized_path + os.sep) or not os.path.isfile(skill_md):
                 raise HTTPException(
                     status_code=404, detail=f"SKILL.md not found in {request.skill_path}"
                 )
 
-            skill_content = skill_md.read_text(encoding="utf-8")
+            with open(skill_md, "r", encoding="utf-8") as f:
+                skill_content = f.read()
 
             # Simple chunking (split by double newline)
             chunks = [

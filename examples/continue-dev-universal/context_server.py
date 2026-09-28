@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import os
 import re
 from pathlib import Path
 from functools import lru_cache
@@ -57,20 +58,20 @@ def load_framework_docs(framework: str) -> str:
         raise ValueError(f"Invalid framework identifier: {framework!r}")
 
     # Try multiple possible locations
-    possible_paths = [
-        Path(f"output/{framework}-markdown/SKILL.md"),
-        Path(f"../../output/{framework}-markdown/SKILL.md"),
-        Path(f"../../../output/{framework}-markdown/SKILL.md"),
-    ]
+    possible_roots = ["output", "../../output", "../../../output"]
 
-    for doc_path in possible_paths:
-        if doc_path.exists():
-            with open(doc_path, 'r', encoding='utf-8') as f:
+    for root in possible_roots:
+        base_dir = os.path.realpath(root)
+        full_path = os.path.normpath(os.path.join(base_dir, f"{framework}-markdown", "SKILL.md"))
+        if not full_path.startswith(base_dir + os.sep):
+            continue
+        if os.path.isfile(full_path):
+            with open(full_path, "r", encoding="utf-8") as f:
                 return f.read()
 
     raise FileNotFoundError(
         f"Documentation not found for framework: {framework}\n"
-        f"Tried paths: {[str(p) for p in possible_paths]}\n"
+        f"Tried paths: {possible_roots}\n"
         f"Run: skill-seekers create --config configs/{framework}.json"
     )
 

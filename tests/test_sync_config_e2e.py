@@ -191,7 +191,11 @@ class TestSyncConfigE2E(unittest.TestCase):
         )
 
         self.assertFalse(
-            any((urlparse(u).hostname or "").endswith("github.com") for u in discovered),
+            any(
+                (urlparse(u).hostname or "") == "github.com"
+                or (urlparse(u).hostname or "").endswith(".github.com")
+                for u in discovered
+            ),
             "External URLs should not be discovered",
         )
 
