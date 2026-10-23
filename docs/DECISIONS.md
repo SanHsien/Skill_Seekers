@@ -82,3 +82,36 @@
 | #474 | 暫緩 | 開放中，新增 Requesty adaptor（36 檔），屬新功能，尚未合併 |
 
 **基準線**：`tools/upstream_baseline.json` PR 水位推進至 474、issue 水位維持 469、日期 2026-09-30。Baseline 代表已審查，未代表已合併。
+
+
+## 2026-10-24：Dependabot 警示重盤（105 筆 open）與修補
+
+**決定**：open 警示由 2026-10-01 的 5 筆增為 105 筆（critical 12、high 54、medium 36、low 3）。警示筆數是以 `uv.lock` 與 `requirements.txt` 兩份清單分開計算，同一個 advisory 在兩份清單各算一筆。依艦隊規則，有修補版的 critical／high 一律修；本輪順手把同一批有修補版的 medium／low 也一起清掉。全部在分支 `security/deps-20261024` 以單一 PR（#13）處理，不 merge、不 dismiss 任何警示。每個套件獨立一個 commit，以 `uv lock --upgrade-package <套件>==<最小修補版>` 重新產生 `uv.lock`，每次都檢查 lock diff：來源仍只有 PyPI。
+
+| 套件 | 舊版 → 新版 | 清掉的警示（advisory 數；警示筆數） | 備註 |
+| --- | --- | --- | --- |
+| certifi | 2025.11.12 → 2026.10.19（`requirements.txt` 2025.10.5 → 2026.10.19） | critical 1；2 筆 | 最小修補版 |
+| fsspec | 2026.2.0 → 2026.6.0 | high 1；1 筆 | 最小修補版 |
+| Pillow | 12.3.0 → 13.0.0（僅 Python >= 3.11） | 共 39 個 advisory：critical 4、high 23、medium 12；78 筆 | `uv.lock` 與 `requirements.txt` 都以 `python_version` 條件拆開，見下方 Python 3.10 暫緩 |
+| nltk | 3.10.3 → 3.10.4 | high 1；1 筆 | 見下方 |
+| aiohttp | 3.14.3 → 3.14.4 | high 3、medium 3、low 2；8 筆 | 連帶 yarl 1.22.0 → 1.25.1（與 Dependabot PR #9 相同） |
+| GitPython | 3.1.62 → 3.2.1 | high 1；1 筆 | |
+| opentelemetry-api | 1.39.1 → 1.45.1 | medium 1；1 筆 | 連帶 opentelemetry 家族同步升級，並新增 `opentelemetry-exporter-otlp-common`（OpenTelemetry 官方套件，由 exporter 1.45.1 依賴；與 Dependabot PR #11 的鎖檔變更相同） |
+| pypdf | 6.19.0 → 6.21.1 | medium 7、low 1；8 筆 | 最小修補版為 6.21.1（最後一個 low 警示的修補版） |
+| multidict | 6.7.1 → 6.9.1 | medium 1；1 筆 | 最小修補版 |
+
+本分支的 aiohttp、GitPython、opentelemetry-api、pypdf 與 Dependabot 的 PR #9、#10、#11、#12 是同樣的升級；這四個 PR 刻意不關閉也不合併，本分支合併後 Dependabot 會自行關閉。
+
+**nltk**：2026-09-29 記錄為無修補版。現在 PyPI 有 3.10.4（2026-10-20 發布，變更說明為把模型存取、下載與外部程式路徑全數導入沙箱），而該警示的受影響範圍是 `<= 3.10.3`，3.10.4 已在範圍外，故升級；警示的 `first_patched_version` 仍是空值，是否關閉由 GitHub 重掃決定。這個升級獨立成一個 commit，若發現 llama-index 路徑受影響可單獨還原。
+
+**暫緩（沒有可驗證的修補版）**：
+
+- **Pillow 在 Python 3.10**：
+  - 現況：`uv.lock` 與 `requirements.txt` 的 `python_version < "3.11"` 分支仍是 Pillow 12.3.0。這一支對應的 Pillow 警示（`uv.lock` 與 `requirements.txt` 都有）會持續 open，不 dismiss。
+  - 理由：修補版 13.0.0 的 `requires_python` 為 `>=3.11`（PyPI 中繼資料）；`pyproject.toml` 宣告 `requires-python >=3.10`，CI 矩陣也實際測 3.10，所以 3.10 沒有可安裝的修補版。放棄 3.10 是產品決策，不在依賴升級範圍，故不改 `requires-python`。
+  - 觸發條件：停止支援 Python 3.10（屆時把 `requires-python` 改為 `>=3.11` 並重新產生鎖檔、移除 3.10 分支），或 Pillow 發布支援 3.10 的修補版時重評。
+- **chromadb 1.5.9**（critical 2、high 2，皆為 `uv.lock`）：PyPI 最新版仍是 1.5.9，與 2026-09-29 相同，警示 `first_patched_version` 皆為空。理由與限制條件沿用 2026-09-29 的決定（本專案只當用戶端，漏洞在 ChromaDB HTTP 伺服器）。觸發條件不變：chromadb 發布 > 1.5.9 的版本、或本專案開始自己啟動 ChromaDB 伺服器時重評。
+
+**合併後預計剩餘的警示**：chromadb 4 筆（無修補版）與 Pillow 的 Python 3.10 分支（鎖檔仍含 12.3.0，兩份清單的警示可能維持 open）；其餘由 GitHub 在合併後重掃關閉。nltk 是否關閉取決於重掃。
+
+**驗證**：`uv lock --check` 通過；`tools\dev_check.ps1` 全綠（56 passed、1 skipped）；以 `uv sync --locked`（Python 3.12）安裝後，跑上游 fast 測試指令（`pytest tests/ -n 6 --dist=loadfile -m "not slow and not integration and not e2e and not network and not serial and not mcp_only"`），修補前後各 75 個失敗，失敗集合完全相同（皆為本修補前就存在的失敗，與依賴升級無關）；本 fork 的 CI 不執行這套產品測試。Pillow 升級的 commit 訊息寫「50 GHSA alerts」不精確，正確數字為 39 個 advisory、78 筆警示（見上表）。
