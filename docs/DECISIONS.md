@@ -115,3 +115,14 @@
 **合併後預計剩餘的警示**：chromadb 4 筆（無修補版）與 Pillow 的 Python 3.10 分支（鎖檔仍含 12.3.0，兩份清單的警示可能維持 open）；其餘由 GitHub 在合併後重掃關閉。nltk 是否關閉取決於重掃。
 
 **驗證**：`uv lock --check` 通過；`tools\dev_check.ps1` 全綠（56 passed、1 skipped）；以 `uv sync --locked`（Python 3.12）安裝後，跑上游 fast 測試指令（`pytest tests/ -n 6 --dist=loadfile -m "not slow and not integration and not e2e and not network and not serial and not mcp_only"`），修補前後各 75 個失敗，失敗集合完全相同（皆為本修補前就存在的失敗，與依賴升級無關）；本 fork 的 CI 不執行這套產品測試。Pillow 升級的 commit 訊息寫「50 GHSA alerts」不精確，正確數字為 39 個 advisory、78 筆警示（見上表）。
+
+## 2026-10-24（續）：PR #13 後新增的 pypdf、setuptools 警示
+
+PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆（#378–#380，受影響範圍 `< 6.21.2`）、setuptools low 1 筆（#381，受影響範圍 `>= 38.2.2, < 84.1.0`）。
+
+| 套件 | 版本 | 備註 |
+|------|------|------|
+| pypdf | 6.21.1 → 6.21.2 | 最小修補版 |
+| setuptools | 84.0.0 → 84.1.0 | 最小修補版 |
+
+以 `uv lock --upgrade-package <套件>==<版本>` 逐一升級，鎖檔差異只有這兩個套件、來源皆為 PyPI；`requirements.txt` 沒有這兩個套件的 pin，不需修改。Dependabot PR #9–#11 已被 #13 取代，不處理。Pillow（Python 3.10 分支）與 chromadb 的暫緩決定不變。
