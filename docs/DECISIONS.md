@@ -171,3 +171,10 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **驗證**：`tests/test_web_*.py` 失敗集合是修補前的子集（修補前 29 項、修補後 25 項，沒有新增失敗；差異來自本次以隔離 `HOME` 執行，不讀本機真實技能目錄）；`test_config_manager`、`test_workflows_command`、`test_workflow_*`、`test_mcp_workflow_tools` 共 155 項全過；新增 `tests/test_codeql_hardening.py` 7 項；`dev_check.ps1` 綠。重掃後的實際結果記在下一則。
 
 **重掃結果（`e2aea07`）**：34 筆降為 15 筆。clear-text-logging、polynomial-redos、stack-trace-exposure（7）全數關閉，path-injection 23 降為 13。剩下的 log-injection 2 筆（`_log_safe` 的寫法 CodeQL 認不得）與 SPA 路由的 path-injection 2 筆（`realpath`＋`startswith` 不被辨識）在下一個 commit 改成它認得的寫法（`replace("\r", "").replace("\n", "")`、`normpath`＋`startswith` 後再以 `realpath` 複查符號連結）。其餘 11 筆 path-injection 屬上表「本機使用者指定的路徑」，刻意不改、不 dismiss。
+
+**最終重掃（`30cc516`，CodeQL run 成功）**：34 筆降為 13 筆，全是 path-injection。log-injection、clear-text-logging、polynomial-redos、stack-trace-exposure 全數關閉。剩下的 13 筆：
+
+- 11 筆是本機使用者指定的路徑，刻意不改：`app.py` 845（新增專案）、1195／1196／1199（`/api/library/build` 的 `config_path`）、1307（市集安裝，`item_path` 已限定在快取清單內）；`analyze.py` 51、`configs.py` 134（分析／產生設定的目錄）；`enhancement_workflow.py` 131／135／137／162（`--workflow` 接受任意路徑的 CLI 功能）。
+- 2 筆是 SPA 靜態檔路由（`app.py` 1454／1455）：程式已用 `normpath`＋`startswith` 限制在 `dist` 內，並以 `realpath` 複查符號連結；審查者在 Windows 以真實目錄連接點（`mklink /J`）實測：`../` 穿越、絕對路徑、UNC、兄弟目錄前綴（`Dist2`）、經連接點逃出 `dist` 全部回 404。CodeQL 不認得這個檢查形式（試過 `realpath`＋`startswith`、`normpath`＋`startswith` 兩種），判為誤判。
+
+這 13 筆都不 dismiss，保持 open，是否以「won't fix／false positive」關閉由維護者決定。
