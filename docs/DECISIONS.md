@@ -190,3 +190,11 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | `web/runner.py` `_create_flag_argv` | `flags["workflows"]` 每一項必須通過 `safe_name`（與儲存使用者 workflow 時的規則相同，只接受單一名稱，不接受路徑；不合格會在工作執行時失敗，而不是在提交時回 400） |
 | `enhancement_workflow.py`（`--workflow` 載入器） | 經上一項後，HUD 只能傳入名稱；剩下的只有執行者自己在命令列或 `workflows` 子指令給的路徑，屬 CLI 本來就接受任意路徑的功能。重掃後以 `won't fix` 關閉並附 `檔案:行號` |
 | SPA 靜態檔路由 | 已限制在 `dist` 內並複查符號連結（審查者以 `mklink /J` 實測穿越、絕對路徑、UNC、兄弟目錄前綴、連接點逃逸皆 404）。重掃後以 `false positive` 關閉 |
+
+**重掃與處置（`0f44a45`，CodeQL run 成功）**：改為 `user_path` 後，CodeQL 仍回報 16 筆 path-injection（污點仍經 `user_path` 流向 `Path`／檔案操作，它不把這個函式當作守衛），2026-10-25 逐筆 dismiss，每筆都附理由與 `檔案:行號`，目前 open 為 0：
+
+- 4 筆 `won't fix`（#49–#52，`cli/enhancement_workflow.py` 131／135／137／162）：CLI `--workflow` 路徑來自執行者自己的參數；HUD 已不能傳路徑（`web/runner.py` 以 `safe_name` 限制）。
+- 10 筆 `false positive`（#41、#42、#76–#83，`web/app.py` 846／847／1196／1197／1200、`web/registry.py` 592、`web/routes/analyze.py` 52／53、`web/routes/configs.py` 134 ×2）：API 路徑已由 `paths.user_path` 限制，超出範圍回 400，測試在 `tests/test_codeql_hardening.py`。
+- 2 筆 `false positive`（#71、#47，`web/app.py` 1461／1462，SPA 路由）：見前一段的實測。
+
+重新開啟條件：`user_path` 的允許範圍放寬，或有新的端點直接把請求內容傳給檔案操作。
