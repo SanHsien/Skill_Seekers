@@ -27,15 +27,13 @@
 
 ## 💛 Спонсоры
 
-<!-- SPONSORS:TOP:START -->
-**Launch Partner**
+<!-- SPONSORS:START -->
+### Bronze Sponsors
 
 <p align="center">
-  <a href="https://www.atlascloud.ai/"><img src="docs/assets/sponsors/atlas-cloud.png" alt="Atlas Cloud" width="200"></a>
+  <a href="https://fluxionai.world/register?utm_source=github&utm_medium=sponsor&utm_campaign=skillseekers"><img src="docs/assets/sponsors/fluxion-ai.png" alt="Fluxion AI" width="100"></a><br/><sub><b>Sponsor — Bronze</b></sub>
 </p>
-
-[Atlas Cloud](https://www.atlascloud.ai/) — A full-modal, OpenAI-compatible AI inference platform. Skill Seekers supports it as a packaging/enhancement target via `--target atlas` with `ATLAS_API_KEY`.
-<!-- SPONSORS:TOP:END -->
+<!-- SPONSORS:END -->
 
 **[Стать спонсором](SPONSORSHIP.md)** · [GitHub Sponsors](https://github.com/sponsors/yusufkaraaslan)
 
@@ -415,10 +413,6 @@ MIT — см. [LICENSE](LICENSE).
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/yusufkaraaslan-skill-seekers-badge.png)](https://mseep.ai/app/yusufkaraaslan-skill-seekers)
 
 ---
-
-<!-- SPONSORS:BOTTOM:START -->
-
-<!-- SPONSORS:BOTTOM:END -->
 
 ## 🌐 Экосистема
 

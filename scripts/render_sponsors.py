@@ -7,8 +7,12 @@ so adding a sponsor is a one-file edit instead of 13 hand edits.
 
 Markers (already present in each README)::
 
-    <!-- SPONSORS:TOP:START -->    ... generated ...  <!-- SPONSORS:TOP:END -->
-    <!-- SPONSORS:BOTTOM:START --> ... generated ...  <!-- SPONSORS:BOTTOM:END -->
+    <!-- SPONSORS:START -->  ... generated ...  <!-- SPONSORS:END -->
+
+All tiers render in that single block as ``###`` subheadings, ordered from the
+highest tier down - the layout used by FastAPI and every comparable project.
+Tier value is expressed by order and logo size, not by scattering placements
+across the page.
 
 Only logos/links are generated; the surrounding prose stays hand-maintained so the
 translated READMEs keep their own wording.
@@ -32,9 +36,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SPONSORS_FILE = REPO_ROOT / "sponsors.json"
 SPONSORS_MD = REPO_ROOT / "SPONSORS.md"
 
-# Tiers rendered near the top of the README vs in the bottom grid.
-TOP_TIERS = ("partners", "platinum", "gold")
-BOTTOM_TIERS = ("silver", "bronze")
+# Tier render order, highest first. Order and logo size carry the hierarchy.
+TIERS = ("partners", "platinum", "gold", "silver", "bronze")
 
 # Logo width (px) per tier - Gold "large", Silver "medium", Bronze "small".
 TIER_WIDTH = {
@@ -53,9 +56,29 @@ TIER_LABEL = {
     "bronze": "Bronze Sponsors",
 }
 
-# SPONSORSHIP.md rule 4: sponsor links are clean URLs - no tracking parameters.
-TRACKING_PARAMS = re.compile(
-    r"^(utm_|ref$|referrer$|fbclid$|gclid$|mc_|_hs|source$|campaign$)", re.I
+# Caption under each logo. Rule 2 requires paid placements to be explicitly
+# labelled, so every tier except the grandfathered partner says "Sponsor".
+TIER_CAPTION = {
+    "partners": "Launch Partner",
+    "platinum": "Sponsor — Platinum",
+    "gold": "Sponsor — Gold",
+    "silver": "Sponsor — Silver",
+    "bronze": "Sponsor — Bronze",
+}
+
+# SPONSORSHIP.md rule 4 (link policy): standard UTM parameters are allowed for
+# traffic measurement. Affiliate, referral and click-tracking parameters are not.
+#
+# This is a blocklist rather than an allowlist on purpose - sponsors legitimately
+# use product parameters (?plan=pro, ?lang=en) that the policy says nothing about.
+DISALLOWED_PARAMS = re.compile(
+    r"^("
+    r"ref|referrer|referral|refid|"  # referral
+    r"aff|affid|affiliate|partner|pid|"  # affiliate
+    r"fbclid|gclid|msclkid|dclid|twclid|ttclid|irclickid|clickid|"  # click IDs
+    r"mc_[a-z]+|_hs[a-z]*"  # mailchimp / hubspot analytics
+    r")$",
+    re.I,
 )
 
 
@@ -64,46 +87,60 @@ class PolicyError(ValueError):
 
 
 def _assert_clean_url(name: str, url: str) -> None:
-    """Reject sponsor URLs carrying tracking parameters (SPONSORSHIP.md rule 4)."""
+    """Reject sponsor URLs carrying affiliate or click-tracking parameters.
+
+    SPONSORSHIP.md rule 4 permits standard UTM parameters (``utm_source``,
+    ``utm_medium``, ``utm_campaign``) so sponsors can measure traffic, but
+    forbids affiliate/referral parameters and analytics injection.
+    """
     query = urlsplit(url).query
     if not query:
         return
-    offenders = [k for k in parse_qs(query) if TRACKING_PARAMS.match(k)]
+    offenders = sorted(k for k in parse_qs(query) if DISALLOWED_PARAMS.match(k))
     if offenders:
         raise PolicyError(
-            f"{name}: sponsor URL carries tracking parameters {offenders} - "
-            f"rule 4 of SPONSORSHIP.md requires clean URLs.\n  {url}"
+            f"{name}: sponsor URL carries affiliate/tracking parameters {offenders} - "
+            f"rule 4 of SPONSORSHIP.md permits standard UTM parameters only.\n  {url}"
         )
 
 
 def load_sponsors() -> dict:
     """Load and validate sponsors.json."""
     data = json.loads(SPONSORS_FILE.read_text(encoding="utf-8"))
-    for tier in (*TOP_TIERS, *BOTTOM_TIERS):
+    for tier in TIERS:
         for entry in data.get(tier, []):
             _assert_clean_url(entry["name"], entry["url"])
-            logo = REPO_ROOT / entry["logo"]
-            if not logo.is_file():
-                raise PolicyError(f"{entry['name']}: logo not found at {entry['logo']}")
+            for key in ("logo", "logo_svg"):
+                path = entry.get(key)
+                if path and not (REPO_ROOT / path).is_file():
+                    raise PolicyError(f"{entry['name']}: {key} not found at {path}")
     return data
 
 
 def _logo_html(entry: dict, tier: str) -> str:
+    """Render one logo, captioned with its paid-placement label (rule 2).
+
+    ``logo`` is deliberately a raster: README.md is also the PyPI project
+    description, and SVG is not reliably rendered there. ``logo_svg`` keeps the
+    vector source alongside it for the website.
+    """
     width = entry.get("width", TIER_WIDTH[tier])
+    caption = TIER_CAPTION.get(tier, "Sponsor")
     return (
         f'  <a href="{entry["url"]}">'
         f'<img src="{entry["logo"]}" alt="{entry["name"]}" width="{width}"></a>'
+        f"<br/><sub><b>{caption}</b></sub>"
     )
 
 
-def render_top(data: dict) -> str:
-    """Large placements: launch partners, Platinum and Gold."""
+def render_sponsors(data: dict) -> str:
+    """Render every tier into one block, highest tier first."""
     out: list[str] = []
-    for tier in TOP_TIERS:
+    for tier in TIERS:
         entries = data.get(tier, [])
         if not entries:
             continue
-        out.append(f"**{TIER_LABEL[tier]}**\n")
+        out.append(f"### {TIER_LABEL[tier]}\n")
         out.append('<p align="center">')
         out.extend(_logo_html(e, tier) for e in entries)
         out.append("</p>\n")
@@ -114,29 +151,15 @@ def render_top(data: dict) -> str:
     return "\n".join(out).rstrip() if out else ""
 
 
-def render_bottom(data: dict) -> str:
-    """Grid placements: Silver (medium) and Bronze (small)."""
-    out: list[str] = []
-    for tier in BOTTOM_TIERS:
-        entries = data.get(tier, [])
-        if not entries:
-            continue
-        out.append(f"**{TIER_LABEL[tier]}**\n")
-        out.append('<p align="center">')
-        out.extend(_logo_html(e, tier) for e in entries)
-        out.append("</p>\n")
-    return "\n".join(out).rstrip() if out else ""
-
-
 def _replace_block(text: str, marker: str, body: str) -> str:
     """Replace everything between the ``START``/``END`` markers for ``marker``."""
     pattern = re.compile(
-        rf"<!-- SPONSORS:{marker}:START -->.*?<!-- SPONSORS:{marker}:END -->",
+        rf"<!-- {marker}:START -->.*?<!-- {marker}:END -->",
         re.DOTALL,
     )
     if not pattern.search(text):
         return text
-    rendered = f"<!-- SPONSORS:{marker}:START -->\n{body}\n<!-- SPONSORS:{marker}:END -->"
+    rendered = f"<!-- {marker}:START -->\n{body}\n<!-- {marker}:END -->"
     # lambda avoids backslash/group-reference interpretation in the replacement
     return pattern.sub(lambda _m: rendered, text)
 
@@ -156,15 +179,16 @@ def render_sponsors_md(data: dict) -> str:
         "",
     ]
     any_listed = False
-    for tier in (*TOP_TIERS, *BOTTOM_TIERS):
+    for tier in TIERS:
         entries = data.get(tier, [])
         if not entries:
             continue
         any_listed = True
         lines += [f"## {TIER_LABEL[tier]}", ""]
         for e in entries:
-            note = f" - {e['note']}" if e.get("note") else ""
-            lines.append(f"- [{e['name']}]({e['url']}){note}")
+            detail = e.get("note") or (f"since {e['since']}" if e.get("since") else "")
+            suffix = f" — {detail}" if detail else ""
+            lines.append(f"- [{e['name']}]({e['url']}){suffix}")
         lines.append("")
 
     supporters = data.get("supporters", [])
@@ -194,13 +218,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    top, bottom = render_top(data), render_bottom(data)
+    block = render_sponsors(data)
     drifted: list[str] = []
 
     for readme in sorted(REPO_ROOT.glob("README*.md")):
         original = readme.read_text(encoding="utf-8")
-        updated = _replace_block(original, "TOP", top)
-        updated = _replace_block(updated, "BOTTOM", bottom)
+        updated = _replace_block(original, "SPONSORS", block)
         if updated != original:
             drifted.append(readme.name)
             if args.write:

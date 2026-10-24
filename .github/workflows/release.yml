@@ -34,13 +34,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         if [ -f skill_seeker_mcp/requirements.txt ]; then pip install -r skill_seeker_mcp/requirements.txt; fi
-        # Install package in editable mode for tests (required for src/ layout)
-        pip install -e .
+        # Install package in editable mode for tests (required for src/ layout);
+        # the [ui] extra (fastapi) is needed by the Seeker HUD API tests, matching tests.yml
+        pip install -e ".[ui]"
 
     - name: Run tests
       timeout-minutes: 30
       run: |
-        pip install pytest-timeout
+        pip install pytest-timeout psutil
         python -m pytest tests/ -v \
           -m "not slow and not integration and not e2e and not network and not serial and not mcp_only" \
           --timeout=120
@@ -114,6 +115,22 @@ jobs:
       run: |
         echo "ℹ️  Release ${{ github.ref_name }} already exists, skipping creation"
         echo "View at: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+
+    - name: Build Seeker HUD frontend
+      if: hashFiles('ui/package.json') != ''
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Compile frontend into the package
+      if: hashFiles('ui/package.json') != ''
+      working-directory: ui
+      run: |
+        npm ci
+        npm run build
+        # Vite outputs to src/skill_seekers/web/dist (see ui/vite.config.ts),
+        # which is bundled into the wheel via [tool.setuptools.package-data].
+        test -f ../src/skill_seekers/web/dist/index.html
 
     - name: Build package
       run: |

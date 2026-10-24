@@ -126,3 +126,27 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | setuptools | 84.0.0 → 84.1.0 | 最小修補版 |
 
 以 `uv lock --upgrade-package <套件>==<版本>` 逐一升級，鎖檔差異只有這兩個套件、來源皆為 PyPI；`requirements.txt` 沒有這兩個套件的 pin，不需修改。Dependabot PR #9–#11 已被 #13 取代，不處理。Pillow（Python 3.10 分支）與 chromadb 的暫緩決定不變。
+
+
+## 2026-10-24（續）：採用上游 main 至 v3.10.0（`d26c2e3`）
+
+**決策**：整批採用上游 `main` 自 `c333a37` 起的 74 個 commit（244 個檔案，含 Seeker HUD 網頁介面、`doctor --json`、`quality --json`、`detect` 指令、SQLite 技能索引、`path_safety`、Git 設定快取名稱驗證、`--enhance-level` 預設值修正、MiniMax 影片輸入、PDF 向量圖擷取）。含上游 PR #454、#456–#459、#463、#464、#468、#471、#473 的內容；#470、#472 是贊助商版位。本 fork 的產品碼與起點相比只有 26 個檔案的差異，其中的 `git_repo` 路徑驗證（PR #8 之前的修正）上游已用 `services/path_safety.py` 重做同一件事，採用上游版本。
+
+**做法**：fork 歷史是壓縮過的，與上游沒有共同祖先，不能 `merge`。改用 `git diff c333a37 upstream/main` 以 `git apply --3way` 套用，排除 `CLAUDE.md`（本 fork 已刪除）。8 個衝突檔的處理：
+
+| 檔案 | 處理 |
+| --- | --- |
+| `README.md`、`AGENTS.md`、`CONTRIBUTING.md` | 保留本 fork 精簡版（上游版為產品完整說明） |
+| `uv.lock` | 保留本 fork 版（含 2026-10-24 的安全升級），再 `uv lock` 只更新 `skill-seekers` 自身版本 3.9.1 → 3.10.0 |
+| `.gitignore` | 兩邊都保留 |
+| `doctor.py`、`server_legacy.py`、`source_tools.py` | 採用上游（`doctor.main` 改為由 `DoctorParser` 建立參數、`validate_path_segment` 改由 `path_safety` 匯入） |
+
+套用後額外調整三處：`services/git_repo.py` 採用上游並保留本 fork 的 `git` 選用匯入（`tools/tests` 在沒有產品依賴的 CI 環境要能匯入）；`tools/tests/test_fixes.py` 的 `doctor_main` 測試改為 monkeypatch `sys.argv`（上游 `main(args)` 的參數是已解析的 Namespace）；`README.en.md` 的贊助商區塊改成與上游 `README.md` 一致（Atlas Cloud 版位及圖片已被上游 #470 移除，連結檢查會失敗）。
+
+**驗證**：
+- `pwsh tools\dev_check.ps1` 全綠；`uv lock --check` 通過；`skill-seekers --version` 為 3.10.0，`skill-seekers-doctor --json` 輸出合法 JSON。
+- 上游 fast 測試指令（`uv sync --locked --python 3.12 --all-extras`）：基準 `origin/main` 81 失敗，採用後 101 失敗 + 1 error。新增的 30 項分布在 `test_web_*`（上游新測試，Windows 不相容：POSIX 權限位元、符號連結、路徑分隔符、檔案鎖、`bootstrap_skill.sh`）、`test_bootstrap_skill`、`test_skill_indexer`（`PermissionError`／WinError 32）、`test_create_integration_basic`（`skills\godot` 對 `skills/godot`）；`test_cli_paths` 兩項單獨重跑通過（負載造成逾時）。未發現既有行為的回歸。基準中有 10 項採用後反而通過（`test_create_integration_basic`、`test_cli_refactor_e2e` 等，與負載相關）。本 fork 的 CI 不跑產品測試套件。
+
+**PR／issue 軸**：上游 #475（zh-CN README 措辭）、#476（MCP 可選參數接受 null）、#477（MiniMax 預設改 M3.1 Flash）都還是 open、未合併，暫緩，水位推到 477；觸發條件是它們合併進上游 `main`，之後隨 commit 軸審查。issue 軸無新項目（水位 469）。
+
+**未做**：未修 Windows 上的上游測試（會與上游持續分歧）；#473 的 `enhance.py` 衝突預測已不存在（由 commit 軸整批帶入）。基準線 `reviewed_through` 推進到 `d26c2e3e0384c664a6fcc71ca10ddcd26026ac0b`。

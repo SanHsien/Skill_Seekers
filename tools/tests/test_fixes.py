@@ -53,9 +53,10 @@ class TestDoctorStandaloneEntryPoint:
     def test_doctor_main_callable(self) -> None:
         assert callable(doctor_main)
 
-    def test_doctor_help(self) -> None:
+    def test_doctor_help(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("sys.argv", ["skill-seekers-doctor", "--help"])
         with pytest.raises(SystemExit) as exc:
-            doctor_main(["--help"])
+            doctor_main()
         assert exc.value.code == 0
 
 
