@@ -1451,8 +1451,8 @@ def create_app(root: Path | None = None) -> FastAPI:
             real = os.path.realpath(candidate)
             if real != dist_root and not real.startswith(dist_root + os.sep):
                 raise HTTPException(404, "Not found")
-            if full_path and os.path.isfile(real):
-                return FileResponse(real)
+            if full_path and os.path.isfile(candidate):
+                return FileResponse(candidate)
             return FileResponse(DIST_DIR / "index.html")
 
     return app
