@@ -178,3 +178,15 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 - 2 筆是 SPA 靜態檔路由（`app.py` 1454／1455）：程式已用 `normpath`＋`startswith` 限制在 `dist` 內，並以 `realpath` 複查符號連結；審查者在 Windows 以真實目錄連接點（`mklink /J`）實測：`../` 穿越、絕對路徑、UNC、兄弟目錄前綴（`Dist2`）、經連接點逃出 `dist` 全部回 404。CodeQL 不認得這個檢查形式（試過 `realpath`＋`startswith`、`normpath`＋`startswith` 兩種），判為誤判。
 
 這 13 筆都不 dismiss，保持 open，是否以「won't fix／false positive」關閉由維護者決定。
+
+## 2026-10-25：把「本機使用者指定路徑」的 API 端點改成真檢查
+
+**背景**：上一則把剩下 13 筆 path-injection 中的 11 筆歸為「本機使用者指定路徑」。維護主管要求：只要有任何 server／API 端點會傳進來就必須修，不能直接關。逐筆確認後，其中 7 筆確實是 HTTP 端點的請求內容（HUD 只綁 127.0.0.1 並限制 Host／Origin，但本機其他行程仍可呼叫），1 筆（`--enhance-workflow`）可由 HUD 的建立工作旗標傳入 CLI 載入器。
+
+| 位置 | 處理 |
+| --- | --- |
+| `app.py` `POST /api/projects`、`POST /api/library/build`；`analyze.py` `POST /api/analyze`（dir）；`configs.py` `POST /api/configs/generate`（dir） | 新增 `paths.user_path(root, value)`：相對路徑以工作區為基準、展開 `~`，`normpath` 後必須落在「工作區」「使用者家目錄」或 `SKILL_SEEKERS_ALLOWED_ROOTS`（`os.pathsep` 分隔）之下，否則 `ValueError`（全域處理成 400）。行為變化：這幾個端點指到系統其他位置（例如 `/etc`、`C:\Windows`）會回 400；`/api/library/build` 指向允許範圍外的不存在檔案由 404 變 400（測試已更新並新增一項） |
+| `app.py` `POST /api/marketplaces/install` | 不再對請求路徑做檔案系統操作：以字串 `normcase(normpath())` 與快取清單比對，命中後改用清單內的可信路徑 |
+| `web/runner.py` `_create_flag_argv` | `flags["workflows"]` 每一項必須通過 `validate_path_segment`（只接受單一名稱，不接受路徑） |
+| `enhancement_workflow.py`（`--workflow` 載入器） | 經上一項後，HUD 只能傳入名稱；剩下的只有執行者自己在命令列或 `workflows` 子指令給的路徑，屬 CLI 本來就接受任意路徑的功能。重掃後以 `won't fix` 關閉並附 `檔案:行號` |
+| SPA 靜態檔路由 | 已限制在 `dist` 內並複查符號連結（審查者以 `mklink /J` 實測穿越、絕對路徑、UNC、兄弟目錄前綴、連接點逃逸皆 404）。重掃後以 `false positive` 關閉 |

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from ..analysis_store import list_recent
 from ..context import HudContext
+from ..paths import user_path
 
 TOOLS = ("patterns", "tests", "guides", "config", "router", "quality")
 DEPTHS = ("basic", "c3x")
@@ -48,7 +49,7 @@ def register(app: FastAPI, ctx: HudContext) -> None:
         if req.target.kind == "skill":
             value = str(ctx.skill_dir_for(req.target.value))
         elif req.target.kind == "dir":
-            path = (ctx.root / Path(req.target.value).expanduser()).resolve()
+            path = user_path(ctx.root, req.target.value).resolve()
             if not path.is_dir():
                 raise HTTPException(400, f"not a directory: {path}")
             value = str(path)

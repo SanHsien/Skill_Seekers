@@ -97,6 +97,34 @@ def contained(base: Path, *parts: str) -> Path:
     return Path(full)
 
 
+def allowed_roots(root: Path) -> list[str]:
+    """Directories an API-supplied path may live under.
+
+    The workspace root and the user's home directory, plus any extra roots
+    listed in ``SKILL_SEEKERS_ALLOWED_ROOTS`` (``os.pathsep``-separated).
+    """
+    bases = [str(root), str(Path.home())]
+    bases += [p for p in os.environ.get("SKILL_SEEKERS_ALLOWED_ROOTS", "").split(os.pathsep) if p]
+    return [os.path.normcase(os.path.normpath(os.path.abspath(b))) for b in bases]
+
+
+def user_path(root: Path, value: str) -> Path:
+    """Resolve a path chosen through the API and keep it inside the allowed roots.
+
+    Relative values resolve against ``root``; ``~`` is expanded. Anything that
+    normalises to a location outside the workspace and the home directory is
+    refused, so a request cannot point the server at system files.
+    """
+    if not isinstance(value, str) or not value.strip() or "\x00" in value:
+        raise ValueError("expected a filesystem path")
+    full = os.path.normpath(os.path.join(os.path.abspath(root), os.path.expanduser(value)))
+    folded = os.path.normcase(full)
+    for base in allowed_roots(root):
+        if folded == base or folded.startswith(base + os.sep):
+            return Path(full)
+    raise ValueError("path is outside the workspace and the home directory")
+
+
 def safe_name(value: str) -> str:
     """Validate a single filesystem component supplied through the API."""
     if not value or value in (".", "..") or any(c in value for c in "/\\\x00:"):

@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from .. import registry
 from ..context import HudContext
-from ..paths import atomic_write, read_json, safe_name, state_transaction
+from ..paths import atomic_write, read_json, safe_name, state_transaction, user_path
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ def register(app: FastAPI, ctx: HudContext) -> None:
             raise HTTPException(400, "Choose a URL, framework name or directory")
         if req.kind == "url" and not req.value.startswith(("http://", "https://")):
             raise HTTPException(400, "Enter a documentation URL")
-        if req.kind == "dir" and not (ctx.root / Path(req.value).expanduser()).resolve().is_dir():
+        if req.kind == "dir" and not user_path(ctx.root, req.value).resolve().is_dir():
             raise HTTPException(400, "Directory not found")
         job = ctx.submit_job(
             "generate-config",

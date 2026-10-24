@@ -212,9 +212,15 @@ def test_library_and_workflows(workspace):
 
 
 def test_library_build_missing_config(workspace):
+    root, client = workspace
+    r = client.post("/api/library/build", json={"config_path": str(root / "missing.json")})
+    assert r.status_code == 404
+
+
+def test_library_build_rejects_path_outside_allowed_roots(workspace):
     _, client = workspace
     r = client.post("/api/library/build", json={"config_path": "/nope/missing.json"})
-    assert r.status_code == 404
+    assert r.status_code == 400
 
 
 def test_marketplaces_empty(workspace):

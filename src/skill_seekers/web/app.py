@@ -39,6 +39,7 @@ from .paths import (
     state_transaction,
     atomic_write,
     contained,
+    user_path,
 )
 
 # The built frontend ships *inside* the package as ``skill_seekers/web/dist`` so
@@ -842,7 +843,7 @@ def create_app(root: Path | None = None) -> FastAPI:
 
     @app.post("/api/projects")
     def add_project(req: ProjectRequest) -> dict[str, Any]:
-        path = (root / Path(req.path).expanduser()).resolve()
+        path = user_path(root, req.path).resolve()
         if not path.is_dir():
             raise HTTPException(status_code=400, detail=f"not a directory: {path}")
         project = registry.add_project(str(path))
@@ -1192,7 +1193,7 @@ def create_app(root: Path | None = None) -> FastAPI:
 
     @app.post("/api/library/build")
     def build_config(req: BuildRequest) -> dict[str, Any]:
-        cfg_path = Path(req.config_path).resolve()
+        cfg_path = user_path(root, req.config_path).resolve()
         if not cfg_path.is_file():
             raise HTTPException(status_code=404, detail="config not found")
         try:
@@ -1304,10 +1305,16 @@ def create_app(root: Path | None = None) -> FastAPI:
     def install_from_marketplace(req: InstallRequest) -> dict[str, Any]:
         from .clis import get_cli_specs
 
-        item_path = Path(req.path).resolve()
-        known = {Path(s["path"]).resolve(): s for s in marketplaces()["skills"]}
-        if item_path not in known or known[item_path]["kind"] != req.kind:
+        wanted = os.path.normcase(os.path.normpath(req.path))
+        match = None
+        for skill in marketplaces()["skills"]:
+            listed = os.path.normcase(os.path.normpath(skill["path"]))
+            if wanted in (listed, os.path.normcase(str(Path(skill["path"]).resolve()))):
+                match = skill
+                break
+        if match is None or match["kind"] != req.kind:
             raise HTTPException(status_code=404, detail="item not found in marketplace cache")
+        item_path = Path(match["path"]).resolve()
         if set(req.clis) - {s.id for s in get_cli_specs()}:
             raise HTTPException(400, "Unsupported installation target")
         dest = contained(
