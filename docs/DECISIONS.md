@@ -145,7 +145,7 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 
 **驗證**：
 - `pwsh tools\dev_check.ps1` 全綠；`uv lock --check` 通過；`skill-seekers --version` 為 3.10.0，`skill-seekers-doctor --json` 輸出合法 JSON。
-- 上游 fast 測試指令（`uv sync --locked --python 3.12 --all-extras`）：基準 `origin/main` 81 失敗，採用後 101 失敗 + 1 error。新增的 30 項分布在 `test_web_*`（上游新測試，Windows 不相容：POSIX 權限位元、符號連結、路徑分隔符、檔案鎖、`bootstrap_skill.sh`）、`test_bootstrap_skill`、`test_skill_indexer`（`PermissionError`／WinError 32）、`test_create_integration_basic`（`skills\godot` 對 `skills/godot`）；`test_cli_paths` 兩項單獨重跑通過（負載造成逾時）。未發現既有行為的回歸。基準中有 10 項採用後反而通過（`test_create_integration_basic`、`test_cli_refactor_e2e` 等，與負載相關）。本 fork 的 CI 不跑產品測試套件。
+- 上游 fast 測試指令（`uv sync --locked --python 3.12 --all-extras`）：基準 `origin/main` 81 失敗，採用後 101 失敗 + 1 error；以測試 ID 比對，只在採用後失敗的有 37 項、只在基準失敗的有 16 項。新增的 37 項主要分布在 `test_web_*`（上游新測試，Windows 不相容：POSIX 權限位元、符號連結、路徑分隔符、檔案鎖、`bootstrap_skill.sh`）、`test_bootstrap_skill`、`test_skill_indexer`（`PermissionError`／WinError 32）、`test_create_integration_basic`（`skills\godot` 對 `skills/godot`）；`test_cli_paths` 兩項單獨重跑通過（負載造成逾時）。未發現既有行為的回歸。基準中有 16 項採用後反而通過（含 `test_create_integration_basic`、`test_cli_refactor_e2e`、`test_minimax_multimodal`、`test_issue_219_e2e`，部分應是上游修正帶來，部分可能與負載有關，未逐項區分）。本 fork 的 CI 不跑產品測試套件，上游新增的 `frontend`（HUD 瀏覽器測試）工作也加上與其他上游工作相同的 `github.repository` 守衛，不在 fork 執行。
 
 **PR／issue 軸**：上游 #475（zh-CN README 措辭）、#476（MCP 可選參數接受 null）、#477（MiniMax 預設改 M3.1 Flash）都還是 open、未合併，暫緩，水位推到 477；觸發條件是它們合併進上游 `main`，之後隨 commit 軸審查。issue 軸無新項目（水位 469）。
 

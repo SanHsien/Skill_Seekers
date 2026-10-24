@@ -9,6 +9,7 @@ on:
 jobs:
   frontend:
     name: HUD (lint, build, browser regressions)
+    if: github.repository == 'yusufkaraaslan/Skill_Seekers'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
