@@ -33,7 +33,7 @@ def read_status(skill_dir):
     try:
         return json.loads(status_file.read_text(encoding="utf-8"))
     except Exception as e:
-        return {"error": f"Failed to read status: {e}"}
+        return {"error": f"Failed to read status ({type(e).__name__})"}
 
 
 def format_status(status):

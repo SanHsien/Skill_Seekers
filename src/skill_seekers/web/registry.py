@@ -27,6 +27,7 @@ from .paths import (
     PROJECTS_FILE,
     SKILLS_META_FILE,
     TRASH_DIR,
+    contained,
     read_json,
     write_json,
     update_json,
@@ -540,7 +541,7 @@ def restore_skill(root: Path, archive_id: str) -> Path:
     if dest.exists():
         raise FileExistsError(f"Cannot restore: {dest} already exists")
     dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(TRASH_DIR / archive_id / "skill"), str(dest))
+    shutil.move(str(contained(TRASH_DIR, archive_id, "skill")), str(dest))
     from .clis import invalidate_installed_cache
 
     invalidate_installed_cache()

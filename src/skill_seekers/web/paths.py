@@ -88,6 +88,15 @@ def workspace_dir(root: Path, kind: str) -> Path:
     return (root / Path(value).expanduser()).resolve()
 
 
+def contained(base: Path, *parts: str) -> Path:
+    """Join ``parts`` under ``base`` and refuse anything that escapes it."""
+    root = os.path.normpath(os.path.abspath(base))
+    full = os.path.normpath(os.path.join(root, *parts))
+    if full != root and not full.startswith(root + os.sep):
+        raise ValueError("path escapes its directory")
+    return Path(full)
+
+
 def safe_name(value: str) -> str:
     """Validate a single filesystem component supplied through the API."""
     if not value or value in (".", "..") or any(c in value for c in "/\\\x00:"):

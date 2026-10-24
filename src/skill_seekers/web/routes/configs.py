@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,8 @@ from pydantic import BaseModel
 from .. import registry
 from ..context import HudContext
 from ..paths import atomic_write, read_json, safe_name, state_transaction
+
+logger = logging.getLogger(__name__)
 
 
 def _validate(path: Path) -> dict[str, Any]:
@@ -27,7 +30,8 @@ def _validate(path: Path) -> dict[str, Any]:
             "warnings": list(getattr(validator, "warnings", [])),
         }
     except Exception as exc:  # noqa: BLE001 — a validator crash is itself a validation failure
-        return {"valid": False, "errors": [str(exc)], "warnings": []}
+        logger.warning("config validator crashed", exc_info=exc)
+        return {"valid": False, "errors": [f"validator failed ({type(exc).__name__})"], "warnings": []}
 
 
 class SaveRequest(BaseModel):

@@ -15,7 +15,7 @@ from ..context import HudContext
 TOOLS = ("patterns", "tests", "guides", "config", "router", "quality")
 DEPTHS = ("basic", "c3x")
 AI_MODES = ("off", "auto", "api", "local")
-REPO_RE = re.compile(r"[\w.-]+/[\w.-]+")
+REPO_RE = re.compile(r"[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}")
 
 
 # Module level on purpose: this file uses `from __future__ import annotations`,

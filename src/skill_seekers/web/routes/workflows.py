@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import yaml
@@ -9,7 +10,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from ..context import HudContext
-from ..paths import atomic_write, safe_name
+from ..paths import atomic_write, contained, safe_name
+
+logger = logging.getLogger(__name__)
 
 
 class YamlRequest(BaseModel):
@@ -20,7 +23,9 @@ def _validate_yaml(text: str) -> dict[str, Any]:
     try:
         data = yaml.safe_load(text)
     except yaml.YAMLError as exc:
-        return {"valid": False, "error": f"YAML: {exc}"}
+        mark = getattr(exc, "problem_mark", None)
+        where = f" near line {int(mark.line) + 1}" if mark is not None else ""
+        return {"valid": False, "error": f"YAML syntax error{where}"}
     if not isinstance(data, dict) or not data.get("name"):
         return {"valid": False, "error": "top-level 'name' is required"}
     stages = data.get("stages") or data.get("steps") or []
@@ -90,7 +95,7 @@ def register(app: FastAPI, ctx: HudContext) -> None:  # noqa: ARG001 — uniform
     @app.post("/api/workflows/{name}/copy")
     def copy_workflow(name: str) -> dict[str, Any]:
         row = one(name)
-        dest = user_dir() / f"{name}.yaml"
+        dest = contained(user_dir(), f"{name}.yaml")
         if dest.exists():
             raise HTTPException(409, f"{dest.name} already exists in your workflow directory")
         atomic_write(dest, row["yaml"].encode("utf-8"))
@@ -102,7 +107,7 @@ def register(app: FastAPI, ctx: HudContext) -> None:  # noqa: ARG001 — uniform
         validation = _validate_yaml(req.yaml)
         if not validation["valid"]:
             raise HTTPException(400, validation["error"])
-        dest = user_dir() / f"{name}.yaml"
+        dest = contained(user_dir(), f"{name}.yaml")
         atomic_write(dest, req.yaml.encode("utf-8"))
         return {"ok": True, "path": str(dest)}
 
@@ -116,7 +121,8 @@ def register(app: FastAPI, ctx: HudContext) -> None:  # noqa: ARG001 — uniform
 
                 WorkflowEngine(name if row["origin"] == "bundled" else row["file"])
             except Exception as exc:  # noqa: BLE001 — engine load errors are the validation result
-                result = {"valid": False, "error": str(exc)}
+                logger.warning("workflow engine rejected a workflow", exc_info=exc)
+                result = {"valid": False, "error": f"workflow failed to load ({type(exc).__name__})"}
         return result
 
     @app.delete("/api/workflows/{name}")
@@ -124,8 +130,8 @@ def register(app: FastAPI, ctx: HudContext) -> None:  # noqa: ARG001 — uniform
         row = one(name)
         if row["origin"] != "user":
             raise HTTPException(400, "Bundled workflows cannot be removed; copy one to edit it")
-        path = user_dir() / f"{name}.yaml"
+        path = contained(user_dir(), f"{name}.yaml")
         if not path.is_file():
-            path = user_dir() / f"{name}.yml"
+            path = contained(user_dir(), f"{name}.yml")
         path.unlink(missing_ok=True)
         return {"ok": True}

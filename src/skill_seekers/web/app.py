@@ -38,6 +38,7 @@ from .paths import (
     safe_name,
     state_transaction,
     atomic_write,
+    contained,
 )
 
 # The built frontend ships *inside* the package as ``skill_seekers/web/dist`` so
@@ -1119,7 +1120,7 @@ def create_app(root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail="remote file is not a unified config")
         dest_dir = workspace_dir(root, "configs")
         dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / f"{name}.json"
+        dest = contained(dest_dir, f"{name}.json")
         with state_transaction():
             if dest.exists():
                 raise FileExistsError(
@@ -1309,7 +1310,9 @@ def create_app(root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="item not found in marketplace cache")
         if set(req.clis) - {s.id for s in get_cli_specs()}:
             raise HTTPException(400, "Unsupported installation target")
-        dest = workspace_dir(root, "configs" if req.kind == "config" else "output") / item_path.name
+        dest = contained(
+            workspace_dir(root, "configs" if req.kind == "config" else "output"), item_path.name
+        )
         if dest.exists() and (req.kind != "config" or not req.replace):
             raise FileExistsError(f"{dest} already exists; archive or rename it first")
         job = submit_job(
@@ -1438,10 +1441,13 @@ def create_app(root: Path | None = None) -> FastAPI:
 
         @app.get("/{full_path:path}")
         def spa(full_path: str) -> FileResponse:
-            candidate = (DIST_DIR / full_path).resolve()
-            if not candidate.is_relative_to(DIST_DIR.resolve()) or full_path.startswith("api/"):
+            dist_root = os.path.realpath(DIST_DIR)
+            candidate = os.path.realpath(os.path.join(dist_root, full_path))
+            if not candidate.startswith(dist_root + os.sep) and candidate != dist_root:
                 raise HTTPException(404, "Not found")
-            if full_path and candidate.is_file():
+            if full_path.startswith("api/"):
+                raise HTTPException(404, "Not found")
+            if full_path and os.path.isfile(candidate):
                 return FileResponse(candidate)
             return FileResponse(DIST_DIR / "index.html")
 

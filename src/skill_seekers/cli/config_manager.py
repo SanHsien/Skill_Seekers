@@ -29,6 +29,14 @@ def _get_progress_dir() -> Path:
     return Path.home() / ".local" / "share" / "skill-seekers" / "progress"
 
 
+_PROVIDER_LABELS = {
+    "anthropic": "Anthropic",
+    "google": "Google",
+    "openai": "Openai",
+    "moonshot": "Moonshot",
+}
+
+
 class ConfigManager:
     """Manages Skill Seekers configuration with multi-token support."""
 
@@ -305,7 +313,8 @@ class ConfigManager:
 
         self.config["api_keys"][provider] = key
         self.save_config()
-        print(f"✅ Set {provider.capitalize()} API key")
+        label = _PROVIDER_LABELS.get(provider, "Provider")
+        print(f"✅ Set {label} API key")
 
     def get_api_key(self, provider: str) -> str | None:
         """

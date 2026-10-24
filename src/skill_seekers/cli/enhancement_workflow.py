@@ -35,6 +35,11 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+def _log_safe(value: object) -> str:
+    """Strip line breaks so user-supplied names cannot forge log records."""
+    return str(value).replace(chr(13), "").replace(chr(10), "")
+
+
 @dataclass
 class WorkflowStage:
     """Single enhancement stage in a workflow."""
@@ -145,7 +150,7 @@ class WorkflowEngine:
             try:
                 pkg_ref = importlib_files("skill_seekers.workflows").joinpath(bare_name)
                 yaml_text = pkg_ref.read_text(encoding="utf-8")
-                logger.info(f"📋 Loading bundled workflow: {bare_name}")
+                logger.info("📋 Loading bundled workflow: %s", _log_safe(bare_name))
             except (FileNotFoundError, TypeError, ModuleNotFoundError) as exc:
                 raise FileNotFoundError(
                     f"Workflow '{yaml_ref.stem}' not found. "
@@ -153,7 +158,7 @@ class WorkflowEngine:
                 ) from exc
 
         if resolved_path is not None:
-            logger.info(f"📋 Loading workflow: {resolved_path}")
+            logger.info("📋 Loading workflow: %s", _log_safe(resolved_path))
             with open(resolved_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
         else:

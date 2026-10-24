@@ -150,3 +150,22 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **PR／issue 軸**：上游 #475（zh-CN README 措辭）、#476（MCP 可選參數接受 null）、#477（MiniMax 預設改 M3.1 Flash）都還是 open、未合併，暫緩，水位推到 477；觸發條件是它們合併進上游 `main`，之後隨 commit 軸審查。issue 軸無新項目（水位 469）。
 
 **未做**：未修 Windows 上的上游測試（會與上游持續分歧）；#473 的 `enhance.py` 衝突預測已不存在（由 commit 軸整批帶入）。基準線 `reviewed_through` 推進到 `d26c2e3e0384c664a6fcc71ca10ddcd26026ac0b`。
+
+
+## 2026-10-24（續）：採用上游 v3.10.0 後新增的 34 筆 CodeQL 警示
+
+**背景**：`b435118` 推上 main 後，CodeQL 新開 34 筆（高風險 25：path-injection 23、clear-text-logging 1、polynomial-redos 1；中風險 9：stack-trace-exposure 7、log-injection 2），全部在上游 v3.10.0 帶進來的程式碼（`web/`、`cli/enhancement_workflow.py`、`cli/config_manager.py`）。上游 `development`（`5b5d8df`）沒有對應修正，故自行處理。
+
+**HUD 的威脅模型**：Seeker HUD 只綁 `127.0.0.1`，`app.py` 的中介層拒絕非 localhost 的 Host 與非 `localhost:3000`／`127.0.0.1:3000` 的 Origin，行程以本機使用者身分執行。「專案路徑」「分析目錄」「設定檔路徑」本來就是讓本機使用者指定任意本機路徑，所以這類輸入不是跨權限邊界。下列修補只處理「有明確邊界可守」或「只是資料流被誤判」的位置。
+
+| 警示 | 位置 | 判斷與處理 |
+| --- | --- | --- |
+| clear-text-logging #67 | `config_manager.py` 308 | 誤判：印出的是 provider 名稱，不是金鑰。改為由常數表取顯示名稱，不再讓 provider 參數進入輸出 |
+| log-injection #69、#70 | `enhancement_workflow.py` | 真問題（使用者提供的 workflow 名稱／路徑寫進日誌可含換行）。新增 `_log_safe()` 去除 CR／LF，改用 `%s` 參數化 |
+| polynomial-redos #68 | `analyze.py` `REPO_RE` | 改為 `[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}`（GitHub 名稱上限 100、ASCII），長度有界 |
+| stack-trace-exposure #60–#66 | `configs.py`、`skill_detail.py`、`workflows.py`、`enhance_status.py` | 回應不再帶例外內文：驗證器當機、YAML 語法錯誤（只回行號）、workflow 載入失敗、狀態檔讀取失敗都改成固定訊息＋例外類別名，完整例外只寫日誌 |
+| path-injection（有邊界） | `app.py` 的 SPA 靜態檔、官方設定下載目的地、市集安裝目的地；`registry.py` 的還原封存；`workflows.py` 的複製／儲存／刪除 | 改用新增的 `paths.contained(base, *parts)`（`normpath` 後必須在 `base` 內，否則 `ValueError`）；SPA 路由改以 `realpath`＋`startswith` 檢查 |
+| path-injection（本機使用者指定的路徑） | `app.py`（新增專案、`/api/library/build` 的 `config_path`）、`analyze.py`、`configs.py`（`generate` 的目錄）、`enhancement_workflow.py`（`--workflow` 路徑，CLI 本來就接受任意路徑） | 不改：這些參數的用途就是指定任意本機路徑，限制會破壞功能；來源是本機使用者而非遠端。不 dismiss，保持 open，待維護者決定是否以「won't fix」關閉 |
+| path-injection（匯集點） | `paths.py` 的 `atomic_write` | 這是 sink，污點來自上述呼叫端；呼叫端改完後以重掃結果為準 |
+
+**驗證**：`tests/test_web_*.py` 失敗集合是修補前的子集（修補前 29 項、修補後 25 項，沒有新增失敗；差異來自本次以隔離 `HOME` 執行，不讀本機真實技能目錄）；`test_config_manager`、`test_workflows_command`、`test_workflow_*`、`test_mcp_workflow_tools` 共 155 項全過；新增 `tests/test_codeql_hardening.py` 7 項；`dev_check.ps1` 綠。重掃後的實際結果記在下一則。
