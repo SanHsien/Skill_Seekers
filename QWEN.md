@@ -47,7 +47,6 @@ skill-seekers package <dir> --target claude   # 22 targets available
 | Topic | File |
 |---|---|
 | **Full agent reference** | **[AGENTS.md](AGENTS.md)** |
-| Claude Code specifics | [CLAUDE.md](CLAUDE.md) |
 | Architecture + UML | [docs/UML_ARCHITECTURE.md](docs/UML_ARCHITECTURE.md) |
 | CLI reference | [docs/reference/CLI_REFERENCE.md](docs/reference/CLI_REFERENCE.md) |
 | Troubleshooting | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
