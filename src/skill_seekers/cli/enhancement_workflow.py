@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 def _log_safe(value: object) -> str:
     """Strip line breaks so user-supplied names cannot forge log records."""
-    return str(value).replace(chr(13), "").replace(chr(10), "")
+    return str(value).replace("\r", "").replace("\n", "")
 
 
 @dataclass

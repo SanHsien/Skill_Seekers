@@ -1442,13 +1442,17 @@ def create_app(root: Path | None = None) -> FastAPI:
         @app.get("/{full_path:path}")
         def spa(full_path: str) -> FileResponse:
             dist_root = os.path.realpath(DIST_DIR)
-            candidate = os.path.realpath(os.path.join(dist_root, full_path))
-            if not candidate.startswith(dist_root + os.sep) and candidate != dist_root:
+            candidate = os.path.normpath(os.path.join(dist_root, full_path))
+            if candidate != dist_root and not candidate.startswith(dist_root + os.sep):
                 raise HTTPException(404, "Not found")
             if full_path.startswith("api/"):
                 raise HTTPException(404, "Not found")
-            if full_path and os.path.isfile(candidate):
-                return FileResponse(candidate)
+            # normpath does not follow links; re-check the real location too.
+            real = os.path.realpath(candidate)
+            if real != dist_root and not real.startswith(dist_root + os.sep):
+                raise HTTPException(404, "Not found")
+            if full_path and os.path.isfile(real):
+                return FileResponse(real)
             return FileResponse(DIST_DIR / "index.html")
 
     return app

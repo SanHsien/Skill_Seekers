@@ -169,3 +169,5 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | path-injection（匯集點） | `paths.py` 的 `atomic_write` | 這是 sink，污點來自上述呼叫端；呼叫端改完後以重掃結果為準 |
 
 **驗證**：`tests/test_web_*.py` 失敗集合是修補前的子集（修補前 29 項、修補後 25 項，沒有新增失敗；差異來自本次以隔離 `HOME` 執行，不讀本機真實技能目錄）；`test_config_manager`、`test_workflows_command`、`test_workflow_*`、`test_mcp_workflow_tools` 共 155 項全過；新增 `tests/test_codeql_hardening.py` 7 項；`dev_check.ps1` 綠。重掃後的實際結果記在下一則。
+
+**重掃結果（`e2aea07`）**：34 筆降為 15 筆。clear-text-logging、polynomial-redos、stack-trace-exposure（7）全數關閉，path-injection 23 降為 13。剩下的 log-injection 2 筆（`_log_safe` 的寫法 CodeQL 認不得）與 SPA 路由的 path-injection 2 筆（`realpath`＋`startswith` 不被辨識）在下一個 commit 改成它認得的寫法（`replace("\r", "").replace("\n", "")`、`normpath`＋`startswith` 後再以 `realpath` 複查符號連結）。其餘 11 筆 path-injection 屬上表「本機使用者指定的路徑」，刻意不改、不 dismiss。
