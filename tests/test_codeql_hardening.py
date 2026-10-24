@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from skill_seekers.cli.enhancement_workflow import _log_safe
@@ -67,6 +69,29 @@ def test_user_path_allows_extra_roots_from_environment(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path / "home"))
     monkeypatch.setenv("SKILL_SEEKERS_ALLOWED_ROOTS", str(extra))
     assert user_path(tmp_path / "ws", str(extra / "x")) == extra / "x"
+
+
+def test_user_path_accepts_a_drive_or_filesystem_root_entry(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from skill_seekers.web.paths import _is_within, user_path
+
+    anchor = os.path.normcase(os.path.splitdrive(os.path.abspath(tmp_path))[0] + os.sep)
+    assert _is_within(os.path.normcase(os.path.join(anchor, "work", "x")), anchor)
+    monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path / "home"))
+    monkeypatch.setenv("SKILL_SEEKERS_ALLOWED_ROOTS", anchor)
+    assert user_path(tmp_path / "ws", os.path.join(anchor, "work", "x"))
+
+
+def test_user_path_accepts_the_configured_configs_dir(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from skill_seekers.web import paths
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda _cls: tmp_path / "home"))
+    elsewhere = tmp_path / "elsewhere" / "configs"
+    monkeypatch.setattr(paths, "load_settings", lambda: {"configs_dir": str(elsewhere)})
+    assert paths.user_path(tmp_path / "ws", str(elsewhere / "a.json")) == elsewhere / "a.json"
 
 
 def test_create_flags_reject_workflow_paths():

@@ -39,6 +39,10 @@ Project scans accept local directories and expose failure/retry states. The conf
 
 The MCP screen was folded into **Environment**, which reports real probe results and connection instructions for the MCP tools catalogue alongside Doctor, Servers, and Agents panels. It does not simulate tool execution.
 
+## Paths the HUD accepts
+
+Paths sent to the HUD API (new project, analyze a directory, generate a config from a directory, build a library config) must be inside the workspace, the configured output and configs directories, the config source cache, or your home directory. Anything else is refused with HTTP 400. To allow another location, list it in `SKILL_SEEKERS_ALLOWED_ROOTS` (separated by `;` on Windows, `:` elsewhere), for example `SKILL_SEEKERS_ALLOWED_ROOTS=D:\;C:\GitHub`. The check compares normalised paths; it does not look through links.
+
 ## Pages
 
 Every entity has a URL you can bookmark: `/skills/<id>` (Overview, SKILL.md, Files, Installs, Enhance, Analysis, Export, History), `/configs/<id>` (Overview, JSON, Validate, Estimate, Sync, Push / Submit, Generate), `/workflows/<name>`, `/analyze`, and `/environment` (Doctor, Servers, Agents, MCP tools). Opening a skill from any table, card, or job output goes to its page.

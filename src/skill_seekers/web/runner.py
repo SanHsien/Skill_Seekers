@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from skill_seekers.services.path_safety import validate_path_segment
+from .paths import safe_name
 
 SOURCE_TO_INPUT_KEY: dict[str, str] = {
     "docs": "base_url",
@@ -83,7 +83,7 @@ def _create_flag_argv(flags: dict[str, Any]) -> list[str]:
     if flags.get("agent"):
         argv += ["--agent", str(flags["agent"])]
     for wf in flags.get("workflows") or []:
-        argv += ["--enhance-workflow", validate_path_segment(wf, label="workflow name")]
+        argv += ["--enhance-workflow", safe_name(wf)]
     if flags.get("max_pages"):
         argv += ["--max-pages", str(flags["max_pages"])]
     if flags.get("rate_limit"):

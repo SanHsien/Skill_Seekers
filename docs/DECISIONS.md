@@ -185,8 +185,8 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 
 | 位置 | 處理 |
 | --- | --- |
-| `app.py` `POST /api/projects`、`POST /api/library/build`；`analyze.py` `POST /api/analyze`（dir）；`configs.py` `POST /api/configs/generate`（dir） | 新增 `paths.user_path(root, value)`：相對路徑以工作區為基準、展開 `~`，`normpath` 後必須落在「工作區」「使用者家目錄」或 `SKILL_SEEKERS_ALLOWED_ROOTS`（`os.pathsep` 分隔）之下，否則 `ValueError`（全域處理成 400）。行為變化：這幾個端點指到系統其他位置（例如 `/etc`、`C:\Windows`）會回 400；`/api/library/build` 指向允許範圍外的不存在檔案由 404 變 400（測試已更新並新增一項） |
-| `app.py` `POST /api/marketplaces/install` | 不再對請求路徑做檔案系統操作：以字串 `normcase(normpath())` 與快取清單比對，命中後改用清單內的可信路徑 |
-| `web/runner.py` `_create_flag_argv` | `flags["workflows"]` 每一項必須通過 `validate_path_segment`（只接受單一名稱，不接受路徑） |
+| `app.py` `POST /api/projects`、`POST /api/library/build`；`analyze.py` `POST /api/analyze`（dir）；`configs.py` `POST /api/configs/generate`（dir） | 新增 `paths.user_path(root, value)`：相對路徑以工作區為基準、展開 `~`，`normpath` 後必須落在「工作區」「設定的 output／configs 目錄」「設定來源快取目錄」「使用者家目錄」或 `SKILL_SEEKERS_ALLOWED_ROOTS`（`os.pathsep` 分隔，可寫磁碟機根目錄如 `D:\`）之下，否則 `ValueError`（全域處理成 400，訊息會提示該環境變數）。檢查只比對正規化後的字串，不追連結；呼叫端之後仍會 `resolve()`，家目錄內指向他處的連結仍可通過。**行為變化（影響範圍比「系統目錄」大）**：凡不在上述範圍內的位置都會回 400，包含 `C:\GitHub\...`、`D:\...` 這類 Windows 常見的專案位置，需要用 `SKILL_SEEKERS_ALLOWED_ROOTS` 放行（已寫入 `docs/guides/WEB_UI.md`）；`/api/library/build` 指向允許範圍外的不存在檔案由 404 變 400（測試已更新並新增一項） |
+| `app.py` `POST /api/marketplaces/install` | 不再對請求路徑做檔案系統操作：以字串 `normcase(normpath())` 與快取清單比對，命中後改用清單內的可信路徑。與舊版的差異：請求若給相對路徑或符號連結別名，舊版會先 `resolve()` 再比對，新版不會，會回 404（前端送的是清單上的 `path`，不受影響） |
+| `web/runner.py` `_create_flag_argv` | `flags["workflows"]` 每一項必須通過 `safe_name`（與儲存使用者 workflow 時的規則相同，只接受單一名稱，不接受路徑；不合格會在工作執行時失敗，而不是在提交時回 400） |
 | `enhancement_workflow.py`（`--workflow` 載入器） | 經上一項後，HUD 只能傳入名稱；剩下的只有執行者自己在命令列或 `workflows` 子指令給的路徑，屬 CLI 本來就接受任意路徑的功能。重掃後以 `won't fix` 關閉並附 `檔案:行號` |
 | SPA 靜態檔路由 | 已限制在 `dist` 內並複查符號連結（審查者以 `mklink /J` 實測穿越、絕對路徑、UNC、兄弟目錄前綴、連接點逃逸皆 404）。重掃後以 `false positive` 關閉 |

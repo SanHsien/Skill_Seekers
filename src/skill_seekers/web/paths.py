@@ -100,29 +100,48 @@ def contained(base: Path, *parts: str) -> Path:
 def allowed_roots(root: Path) -> list[str]:
     """Directories an API-supplied path may live under.
 
-    The workspace root and the user's home directory, plus any extra roots
+    The workspace root, the configured output and configs directories, the
+    config source cache, the user's home directory, plus any extra roots
     listed in ``SKILL_SEEKERS_ALLOWED_ROOTS`` (``os.pathsep``-separated).
     """
-    bases = [str(root), str(Path.home())]
+    cache = os.environ.get("SKILL_SEEKERS_CACHE_DIR") or str(Path.home() / ".skill-seekers" / "cache")
+    bases = [
+        str(root),
+        str(workspace_dir(root, "output")),
+        str(workspace_dir(root, "configs")),
+        os.path.expanduser(cache),
+        str(Path.home()),
+    ]
     bases += [p for p in os.environ.get("SKILL_SEEKERS_ALLOWED_ROOTS", "").split(os.pathsep) if p]
     return [os.path.normcase(os.path.normpath(os.path.abspath(b))) for b in bases]
+
+
+def _is_within(folded: str, base: str) -> bool:
+    """True when ``folded`` is ``base`` or below it (``base`` may be a drive root)."""
+    prefix = base if base.endswith(os.sep) else base + os.sep
+    return folded == base or folded.startswith(prefix)
 
 
 def user_path(root: Path, value: str) -> Path:
     """Resolve a path chosen through the API and keep it inside the allowed roots.
 
     Relative values resolve against ``root``; ``~`` is expanded. Anything that
-    normalises to a location outside the workspace and the home directory is
-    refused, so a request cannot point the server at system files.
+    normalises to a location outside the allowed roots is refused, so a request
+    cannot point the server at system files. The check is lexical: callers
+    still resolve links afterwards, and a link inside an allowed root may point
+    elsewhere.
     """
     if not isinstance(value, str) or not value.strip() or "\x00" in value:
         raise ValueError("expected a filesystem path")
     full = os.path.normpath(os.path.join(os.path.abspath(root), os.path.expanduser(value)))
     folded = os.path.normcase(full)
     for base in allowed_roots(root):
-        if folded == base or folded.startswith(base + os.sep):
+        if _is_within(folded, base):
             return Path(full)
-    raise ValueError("path is outside the workspace and the home directory")
+    raise ValueError(
+        "path is outside the workspace and the home directory; "
+        "add its folder to SKILL_SEEKERS_ALLOWED_ROOTS to allow it"
+    )
 
 
 def safe_name(value: str) -> str:
