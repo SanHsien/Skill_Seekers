@@ -198,3 +198,16 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 - 2 筆 `false positive`（#71、#47，`web/app.py` 1461／1462，SPA 路由）：見前一段的實測。
 
 重新開啟條件：`user_path` 的允許範圍放寬，或有新的端點直接把請求內容傳給檔案操作。
+
+
+## 2026-10-25：上游 v3.10.0 帶進來的 `ui/`（npm）警示與 Dependabot PR #17–#21
+
+**背景**：採用上游 v3.10.0 後多了 `ui/`（Seeker HUD 的 React 前端），Dependabot 針對 `ui/package-lock.json` 新開 41 筆警示與 5 個 PR（#17 source-map-js、#18 postcss-selector-parser＋tailwindcss、#19 zod、#20 brace-expansion、#21 vite）。這 5 個 PR 只改 `ui/package-lock.json`，其中 #18、#19、#21 另改 `ui/package.json`。
+
+**做法**：不逐一合併（五個都改同一份鎖檔，分開合併會互相衝突），在 `ui/` 執行一次 `npm audit fix`（不加 `--force`），再把 `package.json` 的版本下限抬到修補版：`zod ^4.6.7`、`vite ^7.3.7`、`react-router ^7.18.2`。鎖檔結果：vite 7.3.7、zod 4.6.7、react-router 7.18.4、lodash 4.18.1（recharts 的傳遞依賴）、source-map-js、brace-expansion 等皆升到修補版；`npm audit` 從 19 個降為 3 個（中風險）。#17、#19、#20、#21 的內容都被涵蓋，推上 main 後 Dependabot 會自動關閉。
+
+**驗證**：`npm ci`、`npm run lint`、`npm run build` 通過；`npm test`（Playwright，28 項）全過。本 fork 的 CI 不跑 `ui/`（上游的 `frontend` 工作已加 repository 守衛），所以證據是本機執行。
+
+**zod 執行期**：`ui/src` 沒有任何檔案 `import` zod，建置後的 `web/dist/assets/*.js` 也不含 zod 程式碼；zod 只是 `ui/package.json` 的直接依賴，鎖檔已升到 4.6.7，但 HUD 的執行期沒有載入它，所以沒有執行期行為變化。
+
+**延後（附證據）**：剩下 3 筆中風險（postcss-selector-parser `< 7.1.6`，經 `tailwindcss 3.4.19` → `postcss-nested` 帶入，皆為開發期建置工具）。唯一修法是 Dependabot #18 的 `tailwindcss 3 → 4`，我在暫存分支實測：安裝 `tailwindcss@4.3.3` 後 `npm run build` 失敗（`tailwindcss` 不能再直接當 PostCSS 外掛，需改用 `@tailwindcss/postcss` 並改寫 `postcss.config.js`、`tailwind.config.js`），所以 #18 不能直接合併，已關閉並要 Dependabot 忽略此主版本。弱點是「選擇器解析的二次方複雜度」，輸入是本專案自己的 CSS，不接收外部輸入。觸發條件：上游把 HUD 遷移到 Tailwind 4，或 `postcss-selector-parser` 6.x 發佈修補版。
