@@ -228,6 +228,6 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 
 **驗證**：`tools\dev_check.ps1` 綠；`ruff check src tests` 全過；上游 fast 測試指令（`uv sync --locked --python 3.12 --all-extras`）109 失敗 + 1 error，把這 110 項在改前的 `origin/main` 重跑，失敗集合完全相同（無新增失敗；失敗是 10-24 條目記下的 Windows 不相容）。
 
-**警示重掃**：見推送後的補記。
+**警示重掃**：推送 `7393009` 後，main 的 CI、CodeQL、Dependency freshness 全綠；Dependabot open 由 87 降為 5（Pillow 82 全部關閉），剩 chromadb 4（無修補版，最新 1.5.9）與 postcss-selector-parser 1（開發期工具，等上游遷到 Tailwind 4），都是先前已記錄的延後；code scanning open 0。
 
 **需注意**：main 的 branch protection 把 `test (windows / py3.10)` 列為必要檢查；這個檢查不會再出現。直接推 main 不受影響（`enforce_admins` 關閉），但之後要合併 PR（含 Dependabot）時該檢查會一直 pending。這需要維護者在 GitHub 設定移除該必要檢查，本次未改 branch protection。
