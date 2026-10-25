@@ -5,7 +5,7 @@ Manages registry of plugin marketplace repositories for skill publishing.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 
@@ -68,7 +68,7 @@ class MarketplaceManager:
         if token_env is None:
             token_env = self._default_token_env(git_url)
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         marketplace = {
             "name": name.lower(),
             "git_url": git_url.strip(),
@@ -147,7 +147,7 @@ class MarketplaceManager:
             if field in allowed_fields:
                 marketplace[field] = value
 
-        marketplace["updated_at"] = datetime.now(timezone.utc).isoformat()
+        marketplace["updated_at"] = datetime.now(UTC).isoformat()
 
         registry = self._read_registry()
         for i, m in enumerate(registry["marketplaces"]):

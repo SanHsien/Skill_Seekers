@@ -74,7 +74,7 @@ pip install skill-seekers[all-llms]
 ```
 
 **What you need:**
-- Python 3.10+
+- Python 3.11+
 - No external services required (fully local!)
 - Optional: OpenAI API key for better embeddings
 

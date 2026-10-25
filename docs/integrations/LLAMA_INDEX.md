@@ -36,7 +36,7 @@ Skill Seekers outputs JSON files with LlamaIndex Node format, ready to build ind
 ## 🚀 Quick Start (5 Minutes)
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11+
 - LlamaIndex installed: `pip install llama-index`
 - OpenAI API key (for embeddings): `export OPENAI_API_KEY=sk-...`
 

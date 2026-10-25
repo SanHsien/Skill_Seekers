@@ -5,18 +5,9 @@ This module dynamically reads the version from pyproject.toml to avoid
 version mismatches across multiple files.
 """
 
-import sys
 from pathlib import Path
 
-# Use tomllib (built-in) for Python 3.11+, tomli (package) for earlier versions
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import tomli as tomllib
-    except ImportError:
-        # Fallback if tomli not available
-        tomllib = None
+import tomllib
 
 
 def get_version() -> str:
@@ -26,10 +17,6 @@ def get_version() -> str:
     Returns:
         Version string (e.g., "3.0.0")
     """
-    if tomllib is None:
-        # Fallback if TOML library not available
-        return "3.10.0"  # Hardcoded fallback
-
     try:
         # Get path to pyproject.toml (3 levels up from this file)
         repo_root = Path(__file__).parent.parent.parent

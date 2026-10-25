@@ -82,12 +82,12 @@ def _try_import(module_name: str) -> tuple[bool, str]:
 
 
 def check_python_version() -> CheckResult:
-    """Check 1: Python version >= 3.10."""
+    """Check 1: Python version >= 3.11."""
     v = sys.version_info
     version_str = f"{v.major}.{v.minor}.{v.micro}"
-    if v >= (3, 10):
+    if v >= (3, 11):
         return CheckResult("Python version", "pass", version_str, critical=True)
-    return CheckResult("Python version", "fail", f"{version_str} (requires 3.10+)", critical=True)
+    return CheckResult("Python version", "fail", f"{version_str} (requires 3.11+)", critical=True)
 
 
 def check_package_installed() -> CheckResult:

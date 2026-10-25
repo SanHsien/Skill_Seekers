@@ -211,3 +211,23 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **zod 執行期**：`ui/src` 沒有任何檔案 `import` zod，建置後的 `web/dist/assets/*.js` 也不含 zod 程式碼；zod 只是 `ui/package.json` 的直接依賴，鎖檔已升到 4.6.7，但 HUD 的執行期沒有載入它，所以沒有執行期行為變化。
 
 **延後（附證據）**：剩下 3 筆中風險（postcss-selector-parser `< 7.1.6`，經 `tailwindcss 3.4.19` → `postcss-nested` 帶入，皆為開發期建置工具）。唯一修法是 Dependabot #18 的 `tailwindcss 3 → 4`，我在暫存分支實測：安裝 `tailwindcss@4.3.3` 後 `npm run build` 失敗（`tailwindcss` 不能再直接當 PostCSS 外掛，需改用 `@tailwindcss/postcss` 並改寫 `postcss.config.js`、`tailwind.config.js`），所以 #18 不能直接合併，已關閉。Dependabot 不接受在多套件 PR 上用 `ignore this major version`，關閉只會略過這次版本，下次 `tailwindcss` 或 `postcss-selector-parser` 發佈新版時會再開 PR；刻意不用 `ignore these dependencies`，以免擋掉 `postcss-selector-parser` 6.x 的修補版。弱點是「選擇器解析的二次方複雜度」，輸入是本專案自己的 CSS，不接收外部輸入。觸發條件：上游把 HUD 遷移到 Tailwind 4，或 `postcss-selector-parser` 6.x 發佈修補版。
+
+
+## 2026-10-25：放棄 Python 3.10 支援（最低版本 3.11）
+
+**背景**：Python 3.10 本月底 EOL。Pillow 13.0.0 需 Python ≥3.11，而 3.10 分支只能停在 12.3.0，這讓 Dependabot 對 `uv.lock` 與 `requirements.txt` 各開 41 個 Pillow 警示（共 82 個）無法關掉。維護者決定放棄 3.10。
+
+**與上游的差異**：上游 `main`（`d26c2e3`）與 `development` 仍宣告 `requires-python = ">=3.10"` 且 CI 測 3.10，無法對齊；本 fork 這項刻意與上游分歧。之後採用上游 commit 時，這些檔案的 3.10 相關行會衝突，一律保留本 fork 的 3.11：`pyproject.toml`（`requires-python`、classifier、`tomli` 條件依賴、ruff `target-version`、mypy）、`mypy.ini`、`uv.lock`、`requirements.txt`、上游的 `.github/workflows/{ci,release,tests,test-vector-dbs}.yml`、`tools/dev_check.ps1`、`render.yaml`。
+
+**做法**：
+- `requires-python >=3.11`；刪 3.10 classifier 與 `tomli; python_version < '3.11'`；`_version.py` 直接用 `tomllib`；`doctor` 的版本檢查改 3.11。
+- `uv lock`（不升級）：只收斂原本分 3.10／3.11+ 兩支的版本，Pillow 只剩 13.0.0（networkx、numpy、onnxruntime、scikit-learn、scipy 同樣只剩 3.11+ 那一支），另移除 8 個僅 3.10 需要的套件（exceptiongroup、async-timeout、backports-asyncio-runner、importlib-metadata、zipp、coloredlogs、humanfriendly、pyreadline3），沒有任何套件升版。`requirements.txt` 的 Pillow 條件式合併為 `Pillow==13.0.0`。
+- CI 矩陣移除 3.10（`ci.yml` 現為 3.11–3.14；上游工作 `tests.yml`、`test-vector-dbs.yml`、`release.yml` 也同步，這些在 fork 被守衛略過）。Docker 基底原本就是 3.12，不變；`render.yaml` 的 `PYTHON_VERSION` 由 3.10 改 3.12。
+- ruff `target-version` 與 mypy 改 3.11：套用 `UP017`（`datetime.UTC`）、`UP015`、`UP041` 的安全自動修正，並清掉因此多出的未使用 import；`UP042`（`str` + `Enum` 改 `StrEnum`，會改變 `str()` 與格式化行為）列入忽略。
+- 文件：README 各語言、`docs/`、安裝與設定腳本的「Python 3.10+」改 3.11+；歷史紀錄（CHANGELOG、DECISIONS 舊條目、REVIEW）不改。
+
+**驗證**：`tools\dev_check.ps1` 綠；`ruff check src tests` 全過；上游 fast 測試指令（`uv sync --locked --python 3.12 --all-extras`）109 失敗 + 1 error，把這 110 項在改前的 `origin/main` 重跑，失敗集合完全相同（無新增失敗；失敗是 10-24 條目記下的 Windows 不相容）。
+
+**警示重掃**：見推送後的補記。
+
+**需注意**：main 的 branch protection 把 `test (windows / py3.10)` 列為必要檢查；這個檢查不會再出現。直接推 main 不受影響（`enforce_admins` 關閉），但之後要合併 PR（含 Dependabot）時該檢查會一直 pending。這需要維護者在 GitHub 設定移除該必要檢查，本次未改 branch protection。

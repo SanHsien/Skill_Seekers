@@ -493,7 +493,7 @@ pytest --cov=src/skill_seekers --cov-report=html
 - 391+ tests passing
 - 39% code coverage
 - All core features tested
-- CI/CD tests on Ubuntu + macOS with Python 3.10-3.12
+- CI/CD tests on Ubuntu + macOS with Python 3.11-3.12
 
 ## Troubleshooting
 

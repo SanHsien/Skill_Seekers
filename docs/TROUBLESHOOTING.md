@@ -88,7 +88,7 @@ which skill-seekers
 
 **Symptoms:**
 ```
-ERROR: Package requires Python >=3.10 but you are running 3.9
+ERROR: Package requires Python >=3.11 but you are running 3.10
 ```
 
 **Solutions:**
@@ -1371,7 +1371,7 @@ Use these to check your setup:
 
 ```bash
 # 1. Check Python
-python3 --version  # Should be 3.10+
+python3 --version  # Should be 3.11+
 
 # 2. Check package is installed
 pip list | grep skill-seekers
@@ -1402,7 +1402,7 @@ git log --oneline -5
 ## Quick Fixes Checklist
 
 - [ ] In the Skill_Seekers directory? (`pwd`)
-- [ ] Python 3.10+ installed? (`python3 --version`)
+- [ ] Python 3.11+ installed? (`python3 --version`)
 - [ ] Package installed? (`pip list | grep skill-seekers`)
 - [ ] Config file exists? (`ls configs/yourconfig.json`)
 - [ ] Internet connection working? (`ping google.com`)

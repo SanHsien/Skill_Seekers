@@ -18,7 +18,7 @@
 
 ## Setup Steps
 
-1. ✅ **Check Python** (3.10+ recommended)
+1. ✅ **Check Python** (3.11+ recommended)
 2. ✅ **Verify repo path**
 3. ✅ **Install dependencies** (with venv option)
 4. ✅ **Test transports** (stdio + HTTP)
@@ -300,7 +300,7 @@ docs/guides/MCP_SETUP.md               # MCP integration guide
 
 ## Quick Validation Checklist
 
-- [ ] Python 3.10+ installed
+- [ ] Python 3.11+ installed
 - [ ] Dependencies installed (`pip install -e .`)
 - [ ] MCP server tests passed (stdio + HTTP)
 - [ ] Agents detected

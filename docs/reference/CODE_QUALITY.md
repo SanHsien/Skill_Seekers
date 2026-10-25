@@ -87,7 +87,7 @@ Ruff configuration is in `pyproject.toml`:
 ```toml
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -389,7 +389,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v3
@@ -418,7 +418,7 @@ Every commit and PR must pass:
 3. **Pytest** - All 1,880+ tests passing
 4. **Coverage** - >80% code coverage
 5. **Multi-platform** - Ubuntu + macOS
-6. **Multi-version** - Python 3.10-3.13
+6. **Multi-version** - Python 3.11-3.13
 
 **Status:** ✅ All checks passing
 
@@ -735,7 +735,7 @@ gh pr create --title "Add your feature" --body "Description..."
 # ✅ Pytest (1,880+ tests)
 # ✅ Coverage report
 # ✅ Multi-platform (Ubuntu + macOS)
-# ✅ Multi-version (Python 3.10-3.13)
+# ✅ Multi-version (Python 3.11-3.13)
 ```
 
 ---
@@ -751,7 +751,7 @@ gh pr create --title "Add your feature" --body "Description..."
 | Test Pass Rate | 100% | 100% | ✅ |
 | Code Coverage | >85% | >80% | ✅ |
 | CI Pass Rate | 100% | >95% | ✅ |
-| Python Versions | 3.10-3.13 | 3.10+ | ✅ |
+| Python Versions | 3.11-3.13 | 3.11+ | ✅ |
 | Platforms | Ubuntu, macOS | 2+ | ✅ |
 
 ### Historical Improvements

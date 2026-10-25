@@ -12,7 +12,7 @@
 
 [![Version](https://img.shields.io/badge/version-3.9.0-blue.svg)](https://github.com/yusufkaraaslan/Skill_Seekers/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP Integration](https://img.shields.io/badge/MCP-40-Tools-blue.svg)](https://modelcontextprotocol.io)
 [![Tested](https://img.shields.io/badge/Tests-3900%2B%20Passing-brightgreen.svg)](tests/)
 [![PyPI version](https://badge.fury.io/py/skill-seekers.svg)](https://pypi.org/project/skill-seekers/)
@@ -137,7 +137,7 @@ pip install skill-seekers[all]         # Всё сразу
 
 </details>
 
-**Требования:** Python 3.10+, Git. Впервые здесь? → **[Надёжный быстрый старт](docs/getting-started/BULLETPROOF_QUICKSTART.md)** 🎯
+**Требования:** Python 3.11+, Git. Впервые здесь? → **[Надёжный быстрый старт](docs/getting-started/BULLETPROOF_QUICKSTART.md)** 🎯
 
 ---
 

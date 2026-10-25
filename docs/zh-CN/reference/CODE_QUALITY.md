@@ -87,7 +87,7 @@ Ruff 配置位于 `pyproject.toml`：
 ```toml
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -389,7 +389,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v3
@@ -418,7 +418,7 @@ jobs:
 3. **Pytest** - 全部 1,880+ 测试通过
 4. **覆盖率** - 代码覆盖率 >80%
 5. **多平台** - Ubuntu + macOS
-6. **多版本** - Python 3.10-3.13
+6. **多版本** - Python 3.11-3.13
 
 **状态：** ✅ 所有检查通过
 
@@ -735,7 +735,7 @@ gh pr create --title "Add your feature" --body "Description..."
 # ✅ Pytest (1,880+ tests)
 # ✅ Coverage report
 # ✅ Multi-platform (Ubuntu + macOS)
-# ✅ Multi-version (Python 3.10-3.13)
+# ✅ Multi-version (Python 3.11-3.13)
 ```
 
 ---
@@ -751,7 +751,7 @@ gh pr create --title "Add your feature" --body "Description..."
 | 测试通过率 | 100% | 100% | ✅ |
 | 代码覆盖率 | >85% | >80% | ✅ |
 | CI 通过率 | 100% | >95% | ✅ |
-| Python 版本 | 3.10-3.13 | 3.10+ | ✅ |
+| Python 版本 | 3.11-3.13 | 3.11+ | ✅ |
 | 平台 | Ubuntu、macOS | 2+ | ✅ |
 
 ### 历史改进

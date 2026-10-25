@@ -39,7 +39,7 @@ Windsurf's Cascade becomes an expert in your frameworks with persistent, automat
 ### Prerequisites
 
 - Windsurf IDE installed (https://windsurf.com/)
-- Python 3.10+ (for Skill Seekers)
+- Python 3.11+ (for Skill Seekers)
 
 ### Installation
 

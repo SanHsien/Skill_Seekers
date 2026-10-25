@@ -26,7 +26,7 @@ The setup script automatically detects and configures:
 ```
 
 The script will:
-1. ✅ Check Python version (3.10+ recommended)
+1. ✅ Check Python version (3.11+ recommended)
 2. ✅ Verify repository path
 3. ✅ Install dependencies (with virtual environment option)
 4. ✅ Test both stdio and HTTP transports

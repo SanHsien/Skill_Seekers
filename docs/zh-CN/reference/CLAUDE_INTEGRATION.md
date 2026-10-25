@@ -493,7 +493,7 @@ pytest --cov=src/skill_seekers --cov-report=html
 - 391+ 测试通过
 - 39% 代码覆盖率
 - 所有核心功能均已测试
-- CI/CD 在 Ubuntu + macOS 上使用 Python 3.10-3.12 进行测试
+- CI/CD 在 Ubuntu + macOS 上使用 Python 3.11-3.12 进行测试
 
 ## 故障排除
 

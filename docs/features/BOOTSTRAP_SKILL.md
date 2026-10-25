@@ -432,7 +432,7 @@ set +x  # Disable debugging
 
 **Debug Checklist:**
 1. ✅ Skill Seekers installed: `skill-seekers --version`
-2. ✅ Python 3.10+: `python --version`
+2. ✅ Python 3.11+: `python --version`
 3. ✅ Dependencies installed: `pip install -e ".[all-llms]"`
 4. ✅ Header file exists: `ls scripts/skill_header.md`
 5. ✅ Output directory writable: `touch output/test && rm output/test`

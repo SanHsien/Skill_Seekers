@@ -41,7 +41,7 @@ Continue becomes an expert in your frameworks across all IDEs with consistent, a
 - Continue.dev installed in your IDE:
   - **VS Code:** https://marketplace.visualstudio.com/items?itemName=Continue.continue
   - **JetBrains:** Settings → Plugins → Search "Continue"
-- Python 3.10+ (for Skill Seekers)
+- Python 3.11+ (for Skill Seekers)
 
 ### Installation
 

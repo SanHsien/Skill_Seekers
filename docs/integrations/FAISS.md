@@ -81,7 +81,7 @@ pip install skill-seekers[all-llms]
 ```
 
 **What you need:**
-- Python 3.10+
+- Python 3.11+
 - OpenAI API key (for embeddings)
 - Optional: CUDA GPU for billion-scale search
 

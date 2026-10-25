@@ -201,10 +201,10 @@ This will:
 
 ### Required Software
 
-1. **Python 3.10 or higher**
+1. **Python 3.11 or higher**
    ```bash
    python3 --version
-   # Should show: Python 3.10.x or higher
+   # Should show: Python 3.11.x or higher
    ```
 
 2. **AI Coding Agent** (at least one):
@@ -249,7 +249,7 @@ cd /path/to/Skill_Seekers
 
 ### 2. What the Script Does
 
-1. **Detects Python version** - Ensures Python 3.10+
+1. **Detects Python version** - Ensures Python 3.11+
 2. **Installs dependencies** - Installs MCP SDK v1.25.0, FastMCP, uvicorn
 3. **Detects agents** - Automatically finds installed AI coding agents
 4. **Configures stdio agents** - Auto-configures Claude Code and VS Code + Cline

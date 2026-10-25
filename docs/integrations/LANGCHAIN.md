@@ -36,7 +36,7 @@ Skill Seekers outputs JSON files with LangChain Document format, ready to load d
 ## 🚀 Quick Start (5 Minutes)
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11+
 - LangChain installed: `pip install langchain langchain-community`
 - OpenAI API key (for embeddings): `export OPENAI_API_KEY=sk-...`
 

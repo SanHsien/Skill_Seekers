@@ -201,7 +201,7 @@ For Cursor, Windsurf, Cline, Roo, Aider, Bolt, Kilo, Continue, Kimi Code:
 - **Current Version:** 3.7.0
 - **Last Updated:** 2026-06-11
 - **Source Types:** 18
-- **Python Required:** 3.10+
+- **Python Required:** 3.11+
 
 ---
 

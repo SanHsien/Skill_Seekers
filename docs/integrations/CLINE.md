@@ -40,7 +40,7 @@ Cline becomes an expert in your frameworks with automatic context and autonomous
 
 - VS Code installed (https://code.visualstudio.com/)
 - Cline extension installed (https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev)
-- Python 3.10+ (for Skill Seekers)
+- Python 3.11+ (for Skill Seekers)
 - Claude API key (recommended) or other LLM
 
 ### Installation

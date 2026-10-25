@@ -48,7 +48,7 @@ Use Skill Seekers as **essential preparation step** before [Tool Name]:
 
 ### Prerequisites
 - [Tool Name] installed and configured
-- Python 3.10+ (for Skill Seekers)
+- Python 3.11+ (for Skill Seekers)
 - [Any tool-specific requirements]
 
 ### Installation

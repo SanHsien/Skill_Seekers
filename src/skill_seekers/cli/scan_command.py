@@ -212,9 +212,7 @@ def _archive_removed(out_dir: Path, removed_slugs: list[str]) -> list[Path]:
     import datetime
     import shutil
 
-    # ``datetime.UTC`` is Python 3.11+; project supports 3.10+, so use the
-    # ``datetime.timezone.utc`` spelling that works on both.
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     archive_dir = out_dir / ".archived" / timestamp
     archived: list[Path] = []
     for slug in removed_slugs:
@@ -930,7 +928,7 @@ async def _submit_config(config_path: Path) -> dict:
                 asyncio.to_thread(submit_config, config_path=str(config_path)),
                 timeout=_SUBMIT_TIMEOUT_SECONDS,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             last_error = RuntimeError(
                 f"Submission timed out after {_SUBMIT_TIMEOUT_SECONDS}s (GitHub API unreachable?)"
             )

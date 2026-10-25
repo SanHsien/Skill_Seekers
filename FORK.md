@@ -26,7 +26,7 @@
 | `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收（支援 `-All` 參數安裝產品依賴） |
 | `tools/test_product.ps1` | Windows 原生產品冒煙測試執行腳本 |
 | `requirements-dev.txt` | 維護依賴清單（pytest, ruff） |
-| `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
+| `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.11–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
 | `.github/workflows/upstream-check.yml` | 每週對上游做未審查 commit、PR、issue 水位檢查 |
 | `.github/workflows/dependency-freshness.yml` | 每月依賴新鮮度檢查 |
 | `.github/workflows/codeql.yml` | CodeQL 安全掃描工作流程 |

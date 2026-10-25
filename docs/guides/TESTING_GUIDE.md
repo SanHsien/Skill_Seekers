@@ -593,7 +593,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v3
@@ -622,7 +622,7 @@ jobs:
 
 Tests run across:
 - **2 operating systems:** Ubuntu + macOS
-- **4 Python versions:** 3.10, 3.11, 3.12, 3.13
+- **3 Python versions:** 3.11, 3.12, 3.13
 - **Total:** 8 test matrix configurations
 
 **Why Matrix Testing:**

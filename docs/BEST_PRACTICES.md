@@ -146,13 +146,13 @@ Claude can check conditions before proceeding. This prevents errors mid-executio
 ## Before You Start
 
 Make sure you have:
-- [ ] Python 3.10+ installed
+- [ ] Python 3.11+ installed
 - [ ] API key set in environment (`export API_KEY=...`)
 - [ ] Network access to api.example.com
 
 ### Quick Check
 ```bash
-python3 --version  # Should show 3.10+
+python3 --version  # Should show 3.11+
 echo $API_KEY      # Should not be empty
 curl api.example.com/health  # Should return 200
 ```

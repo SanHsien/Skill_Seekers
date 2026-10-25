@@ -22,7 +22,7 @@ Complete guide for deploying Skill Seekers in production environments.
 - CPU: 2 cores
 - RAM: 4 GB
 - Disk: 10 GB
-- Python: 3.10+
+- Python: 3.11+
 
 **Recommended (for production):**
 - CPU: 4+ cores

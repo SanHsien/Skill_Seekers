@@ -27,7 +27,7 @@ What actually happened.
 ## 📋 Environment
 
 - **OS:** [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
-- **Python Version:** [e.g., 3.10, 3.11]
+- **Python Version:** [e.g., 3.11, 3.12]
 - **Skill Seekers Version:** [e.g., v1.0.0]
 - **Installation Method:** [pip, git clone, etc.]
 

@@ -260,7 +260,7 @@ if FASTAPI_AVAILABLE:
                     status_code=404, detail=f"SKILL.md not found in {request.skill_path}"
                 )
 
-            with open(skill_md, "r", encoding="utf-8") as f:
+            with open(skill_md, encoding="utf-8") as f:
                 skill_content = f.read()
 
             # Simple chunking (split by double newline)

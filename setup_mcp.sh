@@ -32,7 +32,7 @@ SELECTED_AGENTS=()
 echo "Step 1: Checking Python version..."
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}❌ Error: python3 not found${NC}"
-    echo "Please install Python 3.10 or higher"
+    echo "Please install Python 3.11 or higher"
     exit 1
 fi
 
@@ -40,8 +40,8 @@ PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
 PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d'.' -f1)
 PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d'.' -f2)
 
-if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]); then
-    echo -e "${YELLOW}⚠ Warning: Python 3.10+ recommended for best compatibility${NC}"
+if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 11 ]); then
+    echo -e "${YELLOW}⚠ Warning: Python 3.11+ recommended for best compatibility${NC}"
     echo "Current version: $PYTHON_VERSION"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r

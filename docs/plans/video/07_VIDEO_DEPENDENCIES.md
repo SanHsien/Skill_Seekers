@@ -146,7 +146,7 @@ pip install -e ".[video-full]"
 
 | Requirement | Needed For | How to Check |
 |-------------|-----------|-------------|
-| Python 3.10+ | All | `python --version` |
+| Python 3.11+ | All | `python --version` |
 | Internet connection | YouTube API calls | N/A |
 
 No additional system dependencies. Pure Python.
@@ -155,7 +155,7 @@ No additional system dependencies. Pure Python.
 
 | Requirement | Needed For | How to Check | Install |
 |-------------|-----------|-------------|---------|
-| Python 3.10+ | All | `python --version` | — |
+| Python 3.11+ | All | `python --version` | — |
 | FFmpeg | Audio extraction, video processing | `ffmpeg -version` | See below |
 | GPU (optional) | Whisper + easyocr acceleration | `nvidia-smi` (NVIDIA) | CUDA toolkit |
 

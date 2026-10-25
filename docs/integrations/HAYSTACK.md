@@ -36,7 +36,7 @@ Skill Seekers outputs JSON files with Haystack Document format (`content` + `met
 ## 🚀 Quick Start (5 Minutes)
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11+
 - Haystack 2.x installed: `pip install haystack-ai`
 - Optional: Embeddings library (e.g., `sentence-transformers`)
 

@@ -39,7 +39,7 @@ Cursor's AI becomes an expert in your frameworks with persistent, automatic cont
 ### Prerequisites
 
 - Cursor IDE installed (https://cursor.sh/)
-- Python 3.10+ (for Skill Seekers)
+- Python 3.11+ (for Skill Seekers)
 
 ### Installation
 

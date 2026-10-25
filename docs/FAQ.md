@@ -160,13 +160,13 @@ pip install -e ".[all-llms,dev]"
 
 ### What Python version do I need?
 
-**Required:** Python 3.10 or higher
-**Tested on:** Python 3.10, 3.11, 3.12, 3.13
+**Required:** Python 3.11 or higher
+**Tested on:** Python 3.11, 3.12, 3.13
 **OS Support:** Linux, macOS, Windows (WSL recommended)
 
 **Check your version:**
 ```bash
-python --version  # Should be 3.10+
+python --version  # Should be 3.11+
 ```
 
 ### Why do I get "No module named 'skill_seekers'" error?

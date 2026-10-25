@@ -8,7 +8,7 @@ config submissions (GitHub issues against the registry repo)
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 
@@ -88,8 +88,8 @@ class SourceManager:
             "branch": branch,
             "enabled": enabled,
             "priority": priority,
-            "added_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "added_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         # Load registry
@@ -210,7 +210,7 @@ class SourceManager:
                 source[field] = value
 
         # Update timestamp
-        source["updated_at"] = datetime.now(timezone.utc).isoformat()
+        source["updated_at"] = datetime.now(UTC).isoformat()
 
         # Save changes
         registry = self._read_registry()

@@ -38,7 +38,7 @@ Skill Seekers outputs JSON format ready for Pinecone upsert with all metadata in
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Pinecone account (free tier available)
 - Embedding model API key (OpenAI or Cohere recommended)
 

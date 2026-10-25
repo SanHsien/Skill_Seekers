@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         adaptor: [weaviate, chroma, faiss, qdrant]
-        python-version: ['3.10', '3.12']
+        python-version: ['3.11', '3.12']
 
     env:
       ADAPTOR_NAME: ${{ matrix.adaptor }}

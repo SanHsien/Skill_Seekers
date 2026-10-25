@@ -1070,8 +1070,8 @@ Automatic difficulty assessment based on:
 
 **Solutions:**
 1. Check Python version compatibility:
-   - Python AST extraction requires Python 3.10+
-   - Use `--no-ai` if Python < 3.10
+   - Python AST extraction requires Python 3.11+
+   - Use `--no-ai` if Python < 3.11
 
 2. Verify test structure:
    ```python

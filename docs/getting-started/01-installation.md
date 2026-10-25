@@ -10,7 +10,7 @@ Get Skill Seekers installed and running in under 5 minutes.
 
 | Requirement | Minimum | Recommended |
 |-------------|---------|-------------|
-| **Python** | 3.10 | 3.11 or 3.12 |
+| **Python** | 3.11 | 3.12 |
 | **RAM** | 4 GB | 8 GB+ |
 | **Disk** | 500 MB | 2 GB+ |
 | **OS** | Linux, macOS, Windows (WSL) | Linux, macOS |

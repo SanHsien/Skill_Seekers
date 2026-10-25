@@ -29,9 +29,9 @@ Open Terminal (macOS/Linux) or Command Prompt (Windows) and type:
 python3 --version
 ```
 
-**✅ If you see:** `Python 3.10.x` or `Python 3.11.x` or higher → **Skip to Step 2!**
+**✅ If you see:** `Python 3.11.x` or higher → **Skip to Step 2!**
 
-**❌ If you see:** `command not found` or version less than 3.10 → **Continue below**
+**❌ If you see:** `command not found` or version less than 3.11 → **Continue below**
 
 ### Install Python
 
