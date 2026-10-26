@@ -331,3 +331,19 @@ class TestEdgeCases:
         info = SourceDetector.detect(str(nested))
         assert info.type == "local"
         assert info.suggested_name == "c"
+
+
+class TestBracketedNames:
+    """Square brackets in a local name must not be parsed as an IPv6 host."""
+
+    def test_directory_with_brackets_is_local(self, tmp_path):
+        folder = tmp_path / "notes[2023]"
+        folder.mkdir()
+
+        info = SourceDetector.detect(str(folder))
+        assert info.type == "local"
+        assert info.suggested_name == "notes[2023]"
+
+    @pytest.mark.parametrize("source", ["http://[abc", "docs[1]/guide"])
+    def test_malformed_bracket_input_is_not_a_video_url(self, source):
+        assert SourceDetector._detect_video_url(source) is None

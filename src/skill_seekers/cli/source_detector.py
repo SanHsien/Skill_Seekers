@@ -517,8 +517,11 @@ class SourceDetector:
             )
 
         # Vimeo patterns
-        parsed_v = urlparse(source if "://" in source else f"https://{source}")
-        v_host = (parsed_v.hostname or "").lower()
+        try:
+            parsed_v = urlparse(source if "://" in source else f"https://{source}")
+            v_host = (parsed_v.hostname or "").lower()
+        except ValueError:  # e.g. "notes[2023]" reads as a malformed IPv6 host
+            return None
         if v_host == "vimeo.com" or v_host.endswith(".vimeo.com"):
             return SourceInfo(
                 type="video",
