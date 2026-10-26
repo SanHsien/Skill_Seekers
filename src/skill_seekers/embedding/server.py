@@ -242,7 +242,11 @@ if FASTAPI_AVAILABLE:
         try:
             base_dir = os.path.realpath(os.getcwd())
             normalized_path = os.path.realpath(os.path.normpath(request.skill_path))
-            if not normalized_path.startswith(base_dir):
+            if os.path.normcase(normalized_path) != os.path.normcase(base_dir) and not (
+                os.path.normcase(normalized_path).startswith(
+                    os.path.normcase(base_dir).rstrip(os.sep) + os.sep
+                )
+            ):
                 raise HTTPException(
                     status_code=403, detail="Skill path outside allowed directory"
                 )

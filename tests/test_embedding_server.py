@@ -144,6 +144,21 @@ class TestEmbedBatch:
 
 
 class TestEmbedSkill:
+    @pytest.fixture(autouse=True)
+    def _inside_workspace(self, tmp_path, monkeypatch):
+        # embed_skill only serves skills under the server's working directory
+        monkeypatch.chdir(tmp_path)
+
+    def test_embed_skill_sibling_with_shared_prefix_is_refused(self, client, tmp_path, monkeypatch):
+        work = tmp_path / "app"
+        work.mkdir()
+        evil = tmp_path / "app-secrets"
+        evil.mkdir()
+        (evil / "SKILL.md").write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
+        monkeypatch.chdir(work)
+        response = client.post("/embed/skill", json={"skill_path": str(evil)})
+        assert response.status_code == 403
+
     def test_embed_skill(self, client, tmp_path):
         skill_dir = tmp_path / "test-skill"
         skill_dir.mkdir()
@@ -158,7 +173,7 @@ class TestEmbedSkill:
         assert data["model"] == "text-embedding-3-small"
 
     def test_embed_skill_not_found(self, client):
-        response = client.post("/embed/skill", json={"skill_path": "/nonexistent/path"})
+        response = client.post("/embed/skill", json={"skill_path": "nonexistent/path"})
         assert response.status_code == 404
 
     def test_embed_skill_no_skill_md(self, client, tmp_path):
