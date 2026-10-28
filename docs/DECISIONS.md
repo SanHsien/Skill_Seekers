@@ -231,3 +231,17 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **警示重掃**：推送 `7393009` 後，main 的 CI、CodeQL、Dependency freshness 全綠；Dependabot open 由 87 降為 5（Pillow 82 全部關閉），剩 chromadb 4（無修補版，最新 1.5.9）與 postcss-selector-parser 1（開發期工具，等上游遷到 Tailwind 4），都是先前已記錄的延後；code scanning open 0。
 
 **需注意**：main 的 branch protection 把 `test (windows / py3.10)` 列為必要檢查；這個檢查不會再出現。直接推 main 不受影響（`enforce_admins` 關閉），但之後要合併 PR（含 Dependabot）時該檢查會一直 pending。這需要維護者在 GitHub 設定移除該必要檢查，本次未改 branch protection。
+
+
+## 2026-10-28：embedding 伺服器的 path-injection 警示 #84／#85 與 chromadb 警示 #115／#222–#224
+
+**背景**：CodeQL #84、#85（`py/path-injection`，`embedding/server.py` 的 `embed_skill`，皆在 `Path.exists()` 那一行）自 2026-10-26 起 open。該伺服器預設綁 `0.0.0.0`（`EMBEDDING_HOST`）、沒有驗證，CORS 來源可由 `CORS_ORIGINS` 設定，所以 `skill_path` 視為遠端可控的輸入。程式本來就有「必須在工作目錄內」的檢查（`0405dfd`），但寫法是對 `normcase(...)` 的結果做 `startswith`，CodeQL 認不出它是守衛；而且守衛只涵蓋符號連結解析前的路徑，工作目錄內的連結或 `SKILL.md` 符號連結仍可指向目錄外。
+
+**做法**：
+- 先對請求路徑做 `normpath`＋`startswith`（以工作目錄為基準，相對路徑也可），再用 `realpath` 解開符號連結後複查一次，最後 `SKILL.md` 解開符號連結後也必須留在工作目錄內；任何一步超出範圍回 403。判斷用的路徑一律是被檢查過的同一個值（沿用 2026-10-24 SPA 路由「`normpath`＋`startswith` 後再以 `realpath` 複查」的寫法）。
+- 預設綁定位址不改：`docs/DOCKER_DEPLOYMENT.md` 的容器部署範例以 `--host 0.0.0.0` 啟動，改預設會破壞該用法；要限制對外可達性請設 `EMBEDDING_HOST=127.0.0.1` 或放在有驗證的反向代理後面。
+- 測試：`tests/test_embedding_server.py` 新增 `..` 穿越、絕對路徑在目錄外、目錄符號連結（沒有符號連結權限時改用 Windows 連接點）逃逸、`SKILL.md` 解析後在目錄外、工作目錄內相對路徑五類案例。
+
+**待重掃**：此 commit 尚未推送，CodeQL 是否認得新寫法要看推送後的 run。若 #84／#85 仍 open，改以 `false positive` 關閉並附上述測試作為證據（與 2026-10-25 的處置相同）；在重掃結果出來之前，本條不算警示已關閉。
+
+**chromadb（Dependabot #115 critical、#224 critical、#222 high、#223 high，`uv.lock`）**：2026-10-28 重新查證，PyPI 最新版仍是 1.5.9，四筆的 `first_patched_version` 都是空的；`uv lock --upgrade-package chromadb --dry-run` 回報 `No lockfile changes detected`，沒有可升的版本。延後理由與 2026-09-29 相同（漏洞在 ChromaDB HTTP 伺服器，本專案只當用戶端，沒有任何程式啟動伺服器）。警示維持 open、不 dismiss；若維護者決定 dismiss，建議理由為 `tolerable_risk`。**重新評估觸發條件**：PyPI 出現 chromadb > 1.5.9 的版本（或四個 GHSA 任一出現 patched version），或本專案開始自己啟動／打包 ChromaDB 伺服器（`chroma run`、`chromadb.server`），或 `cli/adaptors/chroma.py` 預設改成連對外的 `HttpClient`。

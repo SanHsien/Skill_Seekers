@@ -240,29 +240,41 @@ if FASTAPI_AVAILABLE:
             HTTPException: If skill embedding fails
         """
         try:
-            base_dir = os.path.realpath(os.getcwd())
-            normalized_path = os.path.realpath(os.path.normpath(request.skill_path))
-            if os.path.normcase(normalized_path) != os.path.normcase(base_dir) and not (
-                os.path.normcase(normalized_path).startswith(
-                    os.path.normcase(base_dir).rstrip(os.sep) + os.sep
-                )
-            ):
-                raise HTTPException(
-                    status_code=403, detail="Skill path outside allowed directory"
-                )
+            # Only skills under the server's working directory are served. The
+            # request path is normalised and checked with startswith on the very
+            # value that is used afterwards, then re-checked after symlinks are
+            # resolved so a link inside the workspace cannot point outside it.
+            base_dir = os.path.normcase(os.path.realpath(os.getcwd()))
+            base_prefix = base_dir.rstrip(os.sep) + os.sep
+            outside_detail = "Skill path outside allowed directory"
 
-            skill_path = Path(normalized_path)
-            if not skill_path.exists() or not skill_path.is_dir():
+            candidate = os.path.normcase(
+                os.path.normpath(os.path.join(base_dir, request.skill_path))
+            )
+            if candidate != base_dir and not candidate.startswith(base_prefix):
+                raise HTTPException(status_code=403, detail=outside_detail)
+
+            resolved = os.path.normcase(os.path.realpath(candidate))
+            if resolved != base_dir and not resolved.startswith(base_prefix):
+                raise HTTPException(status_code=403, detail=outside_detail)
+
+            if not os.path.isdir(resolved):
                 raise HTTPException(
                     status_code=404, detail=f"Skill path not found: {request.skill_path}"
                 )
 
-            # Read SKILL.md safely within the validated directory
-            skill_md = os.path.normpath(os.path.join(normalized_path, "SKILL.md"))
-            if not skill_md.startswith(normalized_path + os.sep) or not os.path.isfile(skill_md):
+            # SKILL.md must also stay inside the workspace once symlinks are resolved
+            skill_md = os.path.normcase(os.path.realpath(os.path.join(resolved, "SKILL.md")))
+            if not skill_md.startswith(base_prefix):
+                raise HTTPException(status_code=403, detail=outside_detail)
+            if not os.path.isfile(skill_md):
                 raise HTTPException(
                     status_code=404, detail=f"SKILL.md not found in {request.skill_path}"
                 )
+
+            # Display name/path use the on-disk spelling (matters on Windows, where
+            # normcase lower-cases the paths used for the checks above)
+            skill_path = Path(os.path.realpath(resolved))
 
             with open(skill_md, encoding="utf-8") as f:
                 skill_content = f.read()

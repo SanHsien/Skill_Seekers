@@ -3,6 +3,9 @@
 Uses starlette TestClient for in-process HTTP testing.
 """
 
+import os
+import subprocess
+
 import pytest
 from unittest.mock import patch
 
@@ -157,6 +160,83 @@ class TestEmbedSkill:
         (evil / "SKILL.md").write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
         monkeypatch.chdir(work)
         response = client.post("/embed/skill", json={"skill_path": str(evil)})
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("escape", ["../outside-skill", "sub/../../outside-skill"])
+    def test_embed_skill_relative_traversal_is_refused(self, client, tmp_path, monkeypatch, escape):
+        work = tmp_path / "app"
+        work.mkdir()
+        (work / "sub").mkdir()
+        outside = tmp_path / "outside-skill"
+        outside.mkdir()
+        (outside / "SKILL.md").write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
+        monkeypatch.chdir(work)
+        response = client.post("/embed/skill", json={"skill_path": escape})
+        assert response.status_code == 403
+
+    def test_embed_skill_absolute_outside_path_is_refused(self, client, tmp_path, monkeypatch):
+        work = tmp_path / "app"
+        work.mkdir()
+        outside = tmp_path / "elsewhere"
+        outside.mkdir()
+        (outside / "SKILL.md").write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
+        monkeypatch.chdir(work)
+        response = client.post("/embed/skill", json={"skill_path": str(outside)})
+        assert response.status_code == 403
+
+    def test_embed_skill_relative_path_inside_workspace(self, client, tmp_path):
+        skill_dir = tmp_path / "rel-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "# Test Skill\n\nThis is a test skill with enough content\n" * 5
+        )
+        response = client.post("/embed/skill", json={"skill_path": "rel-skill"})
+        assert response.status_code == 200
+        assert response.json()["skill_name"] == "rel-skill"
+
+    def test_embed_skill_symlinked_directory_escape_is_refused(self, client, tmp_path, monkeypatch):
+        work = tmp_path / "app"
+        work.mkdir()
+        outside = tmp_path / "elsewhere"
+        outside.mkdir()
+        (outside / "SKILL.md").write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
+        link = work / "link"
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            if os.name != "nt":
+                pytest.skip("symlinks not available")
+            # Windows without symlink privilege: a directory junction escapes the same way
+            made = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(link), str(outside)],
+                capture_output=True,
+                check=False,
+            )
+            if made.returncode != 0:
+                pytest.skip("neither symlinks nor junctions available")
+        monkeypatch.chdir(work)
+        response = client.post("/embed/skill", json={"skill_path": "link"})
+        assert response.status_code == 403
+
+    def test_embed_skill_skill_md_resolving_outside_is_refused(self, client, tmp_path, monkeypatch):
+        # SKILL.md that resolves outside the workspace (a symlink); simulated by
+        # redirecting realpath so the test does not need symlink privileges.
+        work = tmp_path / "app"
+        skill_dir = work / "skill"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# Skill\n\nsome content, long enough to chunk here\n" * 5)
+        secret = tmp_path / "secret.md"
+        secret.write_text("# Secret\n\nsome secret content, long enough to chunk\n" * 5)
+        real_realpath = os.path.realpath
+
+        def fake_realpath(path, *args, **kwargs):
+            if os.path.basename(str(path)) == "SKILL.md":
+                return str(secret)
+            return real_realpath(path, *args, **kwargs)
+
+        monkeypatch.chdir(work)
+        monkeypatch.setattr(os.path, "realpath", fake_realpath)
+        response = client.post("/embed/skill", json={"skill_path": "skill"})
         assert response.status_code == 403
 
     def test_embed_skill(self, client, tmp_path):
