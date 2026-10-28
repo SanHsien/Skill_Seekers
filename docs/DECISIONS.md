@@ -240,8 +240,8 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **做法**：
 - 先對請求路徑做 `normpath`＋`startswith`（以工作目錄為基準，相對路徑也可），再用 `realpath` 解開符號連結後複查一次，最後 `SKILL.md` 解開符號連結後也必須留在工作目錄內；任何一步超出範圍回 403。判斷用的路徑一律是被檢查過的同一個值（沿用 2026-10-24 SPA 路由「`normpath`＋`startswith` 後再以 `realpath` 複查」的寫法）。
 - 預設綁定位址不改：`docs/DOCKER_DEPLOYMENT.md` 的容器部署範例以 `--host 0.0.0.0` 啟動，改預設會破壞該用法；要限制對外可達性請設 `EMBEDDING_HOST=127.0.0.1` 或放在有驗證的反向代理後面。
-- 測試：`tests/test_embedding_server.py` 新增 `..` 穿越、絕對路徑在目錄外、目錄符號連結（沒有符號連結權限時改用 Windows 連接點）逃逸、`SKILL.md` 解析後在目錄外、工作目錄內相對路徑五類案例。
+- 測試：`tests/test_embedding_server.py` 新增 `..` 穿越、絕對路徑在目錄外、目錄符號連結（沒有符號連結權限時改用 Windows 連接點）逃逸、`SKILL.md` 解析後在目錄外、工作目錄內相對路徑等案例（共 6 個測試）。
 
 **待重掃**：此 commit 尚未推送，CodeQL 是否認得新寫法要看推送後的 run。若 #84／#85 仍 open，改以 `false positive` 關閉並附上述測試作為證據（與 2026-10-25 的處置相同）；在重掃結果出來之前，本條不算警示已關閉。
 
-**chromadb（Dependabot #115 critical、#224 critical、#222 high、#223 high，`uv.lock`）**：2026-10-28 重新查證，PyPI 最新版仍是 1.5.9，四筆的 `first_patched_version` 都是空的；`uv lock --upgrade-package chromadb --dry-run` 回報 `No lockfile changes detected`，沒有可升的版本。延後理由與 2026-09-29 相同（漏洞在 ChromaDB HTTP 伺服器，本專案只當用戶端，沒有任何程式啟動伺服器）。警示維持 open、不 dismiss；若維護者決定 dismiss，建議理由為 `tolerable_risk`。**重新評估觸發條件**：PyPI 出現 chromadb > 1.5.9 的版本（或四個 GHSA 任一出現 patched version），或本專案開始自己啟動／打包 ChromaDB 伺服器（`chroma run`、`chromadb.server`），或 `cli/adaptors/chroma.py` 預設改成連對外的 `HttpClient`。
+**chromadb（Dependabot #115 critical、#224 critical、#222 high、#223 high，`uv.lock`）**：2026-10-28 重新查證，PyPI 最新版仍是 1.5.9，四筆的 `first_patched_version` 都是空的；`uv lock --upgrade-package chromadb --dry-run` 回報 `No lockfile changes detected`，沒有可升的版本。延後理由與 2026-09-29 相同（漏洞在 ChromaDB HTTP 伺服器，本專案從不啟動 ChromaDB HTTP 伺服器，只用 `HttpClient` 或內嵌的 `PersistentClient`（`cli/adaptors/chroma.py:289,310`；後者在行程內執行 Chroma 引擎，但不對外提供 HTTP））。警示維持 open、不 dismiss；若維護者決定 dismiss，建議理由為 `tolerable_risk`。**重新評估觸發條件**：PyPI 出現 chromadb > 1.5.9 的版本（或四個 GHSA 任一出現 patched version），或本專案開始自己啟動／打包 ChromaDB 伺服器（`chroma run`、`chromadb.server`），或 `cli/adaptors/chroma.py` 預設改成連對外的 `HttpClient`。
