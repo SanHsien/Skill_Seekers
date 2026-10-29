@@ -10,7 +10,6 @@
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
 | 確認上游追蹤分支的維護政策 | 2026-10-29 `gh` 查詢的預設分支與現有 main 水位不同，不一定是設定錯誤 | 比對上游 main／development 的發版角色與現有裁決；明列維持 release 線或追開發線的選擇，切換須先審新增差異，不直接改水位求綠燈；先以 `gh api repos/yusufkaraaslan/Skill_Seekers/compare/main...development` 審 development 領先 main 的 commits，結論寫進 docs/UPSTREAM.md | Codex | tools/upstream_baseline.json；docs/UPSTREAM.md「Remote」；FORK.md「分支與 remote」；2026-10-29 `gh` 查詢 |
-| 重現依賴延後名稱未正規化的候選缺陷 | 同一 Python 套件可能以底線或連字號出現，導致延後失效 | 用相同套件不同 PEP 503 拼法建立失敗案例；確認可重現才統一載入與查詢的名稱處理，工具測試與 Windows gate 通過 | Codex | tools/check_dependency_freshness.py:60-75、137-144；深掃報告（2026-10-2x）「未修候選」 |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |

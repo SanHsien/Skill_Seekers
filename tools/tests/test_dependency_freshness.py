@@ -97,3 +97,42 @@ def test_report_names_both_exits_so_the_next_person_does_not_invent_a_third() ->
     assert "freshness-hold:" in report
     assert "dependency-deferrals.json" in report
     assert "mute button" in report
+
+
+@pytest.mark.parametrize("deferred_name", ["demo-package", "Demo_Package", "demo.package", "DEMO..._-PACKAGE"])
+@pytest.mark.parametrize("requirement_name", ["demo-package", "Demo_Package", "demo.package", "DEMO..._-PACKAGE"])
+@pytest.mark.parametrize("latest, expected_review", [("2.0.0", False), ("3.0.0", True)])
+def test_equivalent_package_names_share_a_deferral_and_its_expiry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    deferred_name: str,
+    requirement_name: str,
+    latest: str,
+    expected_review: bool,
+) -> None:
+    path = tmp_path / "dependency-deferrals.json"
+    reason = "已審查，暫緩升級"
+    path.write_text(
+        json.dumps({"deferrals": {deferred_name: {"deferredLatest": "2.0.0", "reason": reason}}}),
+        encoding="utf-8",
+    )
+    deferrals = checker.load_deferrals(path)
+    assert deferrals == {"demo-package": ("2.0.0", reason)}
+    monkeypatch.setattr(checker, "fetch_pypi_version", lambda name: latest)
+    packages = checker.parse_requirements(f"{requirement_name}>=1.0.0\n", "requirements.txt")
+    rows = checker.collect_status(packages, deferrals=deferrals)
+    assert checker.needs_review(rows[0]) is expected_review
+    assert rows[0]["deferred_reason"] == ("" if expected_review else reason)
+    report = checker.render_markdown(rows)
+    assert ("REVIEW UPDATE" if expected_review else "DEFERRED at 2.0.0") in report
+    assert rows[0]["name"] == requirement_name
+
+
+def test_equivalent_package_names_are_loaded_only_once(tmp_path: Path) -> None:
+    (tmp_path / "requirements-dev.txt").write_text("Demo_Package>=1.0\n", encoding="utf-8")
+    (tmp_path / "requirements.txt").write_text(
+        "demo.package>=1.0\nDEMO..._-PACKAGE>=1.0\ndemo-package>=1.0\nother-package>=1.0\n",
+        encoding="utf-8",
+    )
+    packages = checker.load_direct_dependencies(tmp_path)
+    assert [package["name"] for package in packages] == ["Demo_Package", "other-package"]

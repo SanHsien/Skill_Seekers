@@ -101,3 +101,12 @@ gh repo set-default --view
 
 - 尚未在 Windows 上對所有 18 種數據源轉換流程與本機 40 個 MCP 工具進行端到端 live integration test（此部分依賴特定第三方 API 金鑰如 Anthropic / OpenAI 等）。
 - 尚未引進上游 `development` 分支在 v3.9.1 之後的未合併 commit（待上游發布 v3.10.0 正式 release 後由每週上游檢查機制統一評估引進）。
+
+## 2026-10-29：依賴延後名稱正規化
+
+- 重現：延後清單的載入與查詢只轉小寫，`Demo_Package` 與 `demo-package` 無法共用延後；直接依賴去重也未處理句點及連續分隔符。
+- 修正：`tools/check_dependency_freshness.py` 共用 PEP 503 名稱正規化，套用於延後載入、套件查詢與直接依賴去重；不改原始顯示名稱或版本到期規則，不增加依賴。
+- 回歸：`tools/tests/test_dependency_freshness.py` 交叉測試四種名稱拼法、延後有效及到期狀態，另驗證跨需求檔去重。PyPI 回覆以既有 monkeypatch 測試方式隔離，沒有外部查詢。
+- 先紅後綠：`python -m pytest -c tools/pytest.ini tools/tests/test_dependency_freshness.py -o addopts='' -q --tb=no`，修正前 exit code 1（28 failed, 14 passed），修正後 exit code 0（42 passed）。
+- Windows 完整維護門禁：`pwsh -NoProfile -File tools\dev_check.ps1`，exit code 0，結尾 `WINDOWS DEV CHECK GREEN`。
+- 已刪除 `docs/fork/ROADMAP.md` 對應完成列；沒有改動產品程式、依賴宣告或其他待辦。
