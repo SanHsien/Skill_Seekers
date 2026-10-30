@@ -4,12 +4,11 @@
 > 現況段的數字是 2026-10-29 依 `main` `a79d768bb127` 查的快照，開工前先重查 GitHub。
 
 ## 現況
-本 fork 將文件、程式庫與 PDF 轉為技能及知識庫，維持 Windows 與 Python 最低版本的本線差異（[FORK](../../FORK.md)、[裁決](../DECISIONS.md)）。2026-10-29 `gh` 查詢顯示 CI、CodeQL 成功，Code scanning 為 0，仍有 chromadb 告警 4 筆且目前無修補版；風險與重看條件見既有裁決，不能因掃描成功稱為全數安全（2026-10-29 `gh` 查詢；docs/DECISIONS.md「2026-10-28」）。上游預設分支已是 development，本線水位仍追 main；兩者用途需先確認，不能把成功的 main 檢查當成已審 development（2026-10-29 `gh` 查詢；tools/upstream_baseline.json；docs/UPSTREAM.md）。
+本 fork 將文件、程式庫與 PDF 轉為技能及知識庫，維持 Windows 與 Python 最低版本的本線差異（[FORK](../../FORK.md)、[裁決](../DECISIONS.md)）。2026-10-29 `gh` 查詢顯示 CI、CodeQL 成功，Code scanning 為 0，仍有 chromadb 告警 4 筆且目前無修補版；風險與重看條件見既有裁決，不能因掃描成功稱為全數安全（2026-10-29 `gh` 查詢；docs/DECISIONS.md「2026-10-28」）。上游預設分支雖為 development（日常協作與 PR 目標），本線維護政策已確認維持追蹤 main（穩定發布線）；development 領先之 3.11.0.dev0 開版 commits 已審查，分支政策與評估依據載於 [上游維護](../UPSTREAM.md)（2026-10-30 審查；tools/upstream_baseline.json）。
 
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 確認上游追蹤分支的維護政策 | 2026-10-29 `gh` 查詢的預設分支與現有 main 水位不同，不一定是設定錯誤 | 比對上游 main／development 的發版角色與現有裁決；明列維持 release 線或追開發線的選擇，切換須先審新增差異，不直接改水位求綠燈；先以 `gh api repos/yusufkaraaslan/Skill_Seekers/compare/main...development` 審 development 領先 main 的 commits，結論寫進 docs/UPSTREAM.md | Codex | tools/upstream_baseline.json；docs/UPSTREAM.md「Remote」；FORK.md「分支與 remote」；2026-10-29 `gh` 查詢 |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
