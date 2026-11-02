@@ -334,6 +334,9 @@ version: {metadata.version}
             api_key,
             provider="anthropic",
             model=self.config.get("custom_model"),
+            # Newer Claude models (Opus 4.7+, Sonnet 5+) reject a non-default
+            # temperature with a 400, and anthropic>=1.0 drops the argument.
+            temperature=None,
         )
 
     def _build_enhancement_prompt(

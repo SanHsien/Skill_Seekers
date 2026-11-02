@@ -45,6 +45,15 @@ class TestSharedEnhanceFlow:
         # provider routed explicitly — no key-prefix guessing
         assert cls.call_args.kwargs["provider"] == "anthropic"
 
+    def test_claude_enhance_sends_no_temperature(self, skill_dir):
+        # Newer Claude models reject a non-default temperature (400) and
+        # anthropic>=1.0 has no such argument (TypeError): never send one.
+        adaptor = ClaudeAdaptor()
+        client = _mock_client("# Enhanced")
+        with patch("skill_seekers.cli.agent_client.AgentClient", return_value=client):
+            assert adaptor.enhance(skill_dir, "sk-ant-x") is True
+        assert client.call.call_args.kwargs["temperature"] is None
+
     def test_truncated_or_failed_call_leaves_skill_md_intact(self, skill_dir):
         adaptor = ClaudeAdaptor()
         # AgentClient returns None on truncation/rate-limit/auth errors

@@ -245,3 +245,16 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **待重掃**：此 commit 尚未推送，CodeQL 是否認得新寫法要看推送後的 run。若 #84／#85 仍 open，改以 `false positive` 關閉並附上述測試作為證據（與 2026-10-25 的處置相同）；在重掃結果出來之前，本條不算警示已關閉。
 
 **chromadb（Dependabot #115 critical、#224 critical、#222 high、#223 high，`uv.lock`）**：2026-10-28 重新查證，PyPI 最新版仍是 1.5.9，四筆的 `first_patched_version` 都是空的；`uv lock --upgrade-package chromadb --dry-run` 回報 `No lockfile changes detected`，沒有可升的版本。延後理由與 2026-09-29 相同（漏洞在 ChromaDB HTTP 伺服器，本專案從不啟動 ChromaDB HTTP 伺服器，只用 `HttpClient` 或內嵌的 `PersistentClient`（`cli/adaptors/chroma.py:289,310`；後者在行程內執行 Chroma 引擎，但不對外提供 HTTP））。警示維持 open、不 dismiss；若維護者決定 dismiss，建議理由為 `tolerable_risk`。**重新評估觸發條件**：PyPI 出現 chromadb > 1.5.9 的版本（或四個 GHSA 任一出現 patched version），或本專案開始自己啟動／打包 ChromaDB 伺服器（`chroma run`、`chromadb.server`），或 `cli/adaptors/chroma.py` 預設改成連對外的 `HttpClient`。
+
+
+## 2026-11-02：上游 PR #478–#479 與 issue #480
+
+三個項目都取目前的 head 讀完 diff，並用 `grep -nE '\S\s{40,}\S|eval\(|new Function|globalThis|[A-Za-z0-9+/]{120,}'` 掃隱藏內容，無命中。commit 軸無新增（仍是 `d26c2e3`）。
+
+| 項目 | 狀態與 head | 裁決 | 證據與理由 |
+| --- | --- | --- | --- |
+| PR #478（剝掉標題的 `a.headerlink` ¶） | open，`85cd5ad`，+55／-2，4 檔 | **採用（移植）** | 缺陷在本 fork 存在：`doc_scraper.py` 的 `extract_content` 與 `_extract_html_as_markdown` 都直接 `clean_text(h.get_text())`，沒有處理 headerlink。照 PR 做法加 `_heading_text()`、帶入其 fixture 與 3 個測試；CHANGELOG 段落因本線 Unreleased 已有條目，改為手寫一行。觸發重看：上游合併時內容若與 `85cd5ad` 不同，比對 `_heading_text()`。 |
+| PR #479（參考檔依頁面順序交錯文字與程式碼） | open，`f7a121a`，+147／-30，4 檔 | **條件式（釘 monitored）** | 缺陷存在（`create_reference_file` 在 `doc_scraper.py:2057` 把程式碼集中到 `**Examples:**` 且只取前 4 個），但它改變所有 reference 檔的輸出版型與 `body_blocks` 資料形狀，屬產品主流程；PR 自己的核取清單「測試全過」「相依已合併」也未勾。等上游合併再隨 commit 軸同步。觸發重看：head 不再是 `f7a121a` 或狀態離開 open（`monitored` 會報）。 |
+| issue #480（Claude 增強固定送 `temperature=0.3`） | open，無留言、無對應 PR | **採用（最小修）** | 缺陷存在：`adaptors/base.py:244` 預設 `temperature=0.3`，`claude.py` 的 `enhance()` 沒覆寫；`gemini.py:310` 早已傳 `None`。Claude 路徑改傳 `temperature=None`（`AgentClient` 在 `None` 時不帶該參數，見 `agent_client.py:818`），新增 `test_claude_enhance_sends_no_temperature`。未動 OpenAI 相容路徑（`openai_compatible.py:249`），那條沒有被回報。 |
+
+驗證：新舊相關測試（`test_heading_headerlinks.py`、`test_enhance_via_agent_client.py`、`test_scraper_features.py`）全過；`test_claude_adaptor.py` 的 3 個 upload 測試在乾淨環境（anthropic 2.x）失敗，與本次改動無關（未碰 upload 程式碼）。
