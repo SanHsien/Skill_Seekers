@@ -294,8 +294,8 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 - 鎖檔：`uv lock`（不升級），只把 3.10 需要的分支加回來：Pillow 12.3.0、filelock 4.1.0、networkx 3.4.2、numpy 2.2.6、scikit-learn 1.7.2、scipy 1.15.3（3.11+ 那一支維持原版本），另加回 async-timeout、backports-asyncio-runner、exceptiongroup、importlib-metadata、zipp。`requirements.txt` 的 Pillow 拆回 `13.0.0; python_version >= "3.11"` 與 `12.3.0; python_version < "3.11"`。
 
 **接受的後果（延後，無修補版）**：
-- **Pillow 在 Python 3.10**：修補版 13.0.0 的 `requires_python` 為 `>=3.11`，3.10 分支只能停在 12.3.0，`uv.lock` 與 `requirements.txt` 的 Pillow 警示會重新開啟（2026-10-25 關閉時為 82 筆）。警示維持 open，不 dismiss。
-- **filelock 在 Python 3.10**：修補版 4.2.1 的 `requires_python` 為 `>=3.11`，3.10 分支停在 4.1.0，#458、#459 這兩筆會重新開啟。filelock 只是 `huggingface-hub`、`torch` 的傳遞依賴。
+- **Pillow 在 Python 3.10**：修補版 13.0.0 的 `requires_python` 為 `>=3.11`，3.10 分支只能停在 12.3.0，`uv.lock` 與 `requirements.txt` 的 Pillow 警示重新開啟，推送 `4e9e9ff` 後實際為 82 筆（兩份清單各 41 筆）。警示維持 open，不 dismiss。
+- **filelock 在 Python 3.10**：修補版 4.2.1 的 `requires_python` 為 `>=3.11`，3.10 分支停在 4.1.0。推送 `4e9e9ff` 後實際重開 17 筆（#458、#459，以及 11-04 新開立（advisory 於 10-23／10-28 公布）、範圍涵蓋 4.1.0 的 #472–#486；high 1、medium 11、low 5），修補版都是 4.2.1，而 4.1.1 起全部要求 `>=3.11`，3.10 沒有可裝的修補版。filelock 只是 `huggingface-hub`、`torch` 的傳遞依賴。
 - 其他 3.10 分支的舊版本（networkx、numpy、scikit-learn、scipy）若出現警示，同樣依本條處理。
 - **觸發條件**：上游停止支援 Python 3.10（`requires-python` 提高或 CI 矩陣移除 3.10）時跟著停，屆時參考 `7393009` 重做；或 Pillow／filelock 發布支援 3.10 的修補版時升級。
 
