@@ -14,6 +14,7 @@
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
 | 修補或重評 chromadb 依賴 | patched version 出現、新版可用，或本專案開始提供 ChromaDB HTTP／改變 HttpClient 暴露面 | 查 `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 的 first_patched_version；最小鎖檔更新後跑 Chroma adapter 測試與 gate，核對告警 state=fixed；無修補時保留 open | Claude Opus | docs/DECISIONS.md「2026-10-28」chromadb；src/skill_seekers/cli/adaptors/chroma.py:289、310 |
+| 修補 `ui/` 的 minimatch 警示 | `eslint` 或 `typescript-eslint` 改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版 | 在 `ui/` 升 lint 工具鏈後 `npm ci`、`npm run lint`、`npm run build`、`npm test` 通過，核對 Dependabot #455 state=fixed | Claude Opus | docs/DECISIONS.md「2026-11-04」minimatch |
 | 隨選定追蹤線採用上游修正 | 上游合併既有待審 PR，或新增 commit 命中本線功能 | 逐筆核對 MCP null 參數與 provider 行為，保留 Python 最低版本、允許路徑與發布 guard；產品回歸相對基準無新增失敗，維護 gate 通過才更新水位 | Codex | docs/DECISIONS.md「2026-10-24」PR／issue 軸；tools/upstream_baseline.json |
 | 補查 Windows 路徑邊界與工具顯示候選問題 | 實際以磁碟根目錄當 skill 路徑、cp950 主控台或帶標題／程式碼區塊連結觸發問題 | 先重現才修；根目錄合法輸入可讀，兄弟目錄、穿越與連接點逃逸仍拒絕；工具不因輸出編碼崩潰，連結案例不誤判 | Codex | 深掃報告（2026-10-2x）「未修候選」；docs/DECISIONS.md「2026-10-28」embedding |
 | 重評 API 路徑信任範圍 | user_path 放寬，或新增 HTTP 端點直接操作請求中的路徑 | 對新端點測工作區外、允許根目錄、連接點與可信快取案例；重新核對原 CodeQL dismiss 理由，不能沿用舊裁決作自動豁免 | Claude Opus | docs/DECISIONS.md「2026-10-25：把本機使用者指定路徑的 API 端點改成真檢查」 |

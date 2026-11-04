@@ -258,3 +258,26 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | issue #480（Claude 增強固定送 `temperature=0.3`） | open，無留言、無對應 PR | **採用（最小修）** | 缺陷存在：`adaptors/base.py:244` 預設 `temperature=0.3`，`claude.py` 的 `enhance()` 沒覆寫；`gemini.py:310` 早已傳 `None`。Claude 路徑改傳 `temperature=None`（`AgentClient` 在 `None` 時不帶該參數，見 `agent_client.py:818`），新增 `test_claude_enhance_sends_no_temperature`。未動 OpenAI 相容路徑（`openai_compatible.py:249`），那條沒有被回報。 |
 
 驗證：新舊相關測試（`test_heading_headerlinks.py`、`test_enhance_via_agent_client.py`、`test_scraper_features.py`）全過；`test_claude_adaptor.py` 的 3 個 upload 測試在乾淨環境（anthropic 2.x）失敗，與本次改動無關（未碰 upload 程式碼）。
+
+## 2026-11-04：Dependabot PR #23／#24、11-03 起的新警示，與 Python 3.10 跟隨上游的查證
+
+**PR**：#23（pyasn1 0.6.4 → 0.6.5）、#24（pypdf 6.21.2 → 6.21.4）都是 patch 升版、只改 `uv.lock`，CI（Windows py3.11–3.14、Python security scan、CodeQL）全綠，以 squash 合併（`e68e951`、`17b9dc6`），涵蓋 pypdf 7 筆、pyasn1 4 筆警示。
+
+**其餘新警示（皆為 `uv.lock`，除 minimatch 外）**：以 `uv lock --upgrade-package <套件>==<版本>` 一次升級，鎖檔差異只有這四個套件（另有檔頭 `revision` 由 Dependabot 寫的 5 變成本機 uv 寫的 3，與 `7393009` 相同，不影響內容）、來源皆為 PyPI；`requirements.txt` 沒有這些套件的 pin，不需修改。
+
+| 套件 | 版本 | 警示 | 備註 |
+| --- | --- | --- | --- |
+| filelock | 3.20.3 → 4.2.1 | medium 2（#458、#459） | 大版本，但只是 `huggingface-hub`、`torch` 的傳遞依賴，`src/`、`tests/` 沒有直接使用；兩者都沒有限制 `filelock<4`。以 `huggingface-hub 1.33.0`（鎖檔版本）＋ `filelock 4.2.1` 實跑 `FileLock` 與 `WeakFileLock` 取得／釋放鎖通過 |
+| langgraph | 1.2.12 → 1.2.14 | medium 1（#457） | patch |
+| langgraph-sdk | 0.4.5 → 0.4.6 | medium 1（#456） | patch |
+| joserfc | 1.7.5 → 1.7.6 | medium 1（#460） | patch |
+
+**延後：minimatch（#455，medium，`ui/package-lock.json`，開發期傳遞依賴）**：唯一修補版是 11.0.1（2026-10-27 發布），3.x、9.x、10.x 都沒有回補。鎖檔裡的 `minimatch 3.1.5` 來自 `eslint 9.39.2`、`@eslint/eslintrc`、`@eslint/config-array`（`^3.1.2`），`9.0.9` 來自 `@typescript-eslint/typescript-estree 8.52.0`（`^9.0.5`）；即使升到目前最新的 `eslint 10.14.0`、`typescript-estree 8.72.1`，需求也只到 `^10.2.x`，仍在受影響範圍內。用 `overrides` 強制 11.x 會跨兩到三個大版本（3.x 是 CommonJS 預設匯出函式，11.x 是 ESM 具名匯出），會讓 lint 工具鏈壞掉，故不做。弱點是 glob 樣式展開的阻斷服務，輸入是本專案自己的 lint 設定與檔案路徑，不接收外部輸入，也不進 HUD 執行期。警示維持 open，不 dismiss。**觸發條件**：`eslint` 或 `typescript-eslint` 的版本改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版。
+
+**延後：chromadb 4 筆（#115、#222–#224）**：PyPI 最新仍是 1.5.9，`first_patched_version` 皆空，理由與觸發條件沿用 2026-10-28 條目，不變。
+
+**Python 3.10 與上游 Windows 新測試失敗（維護者 11-04 指示「跟隨上游」）的查證**：
+- 上游 `main`（`d26c2e3`）與 `development`（`5b5d8df`）今天重查都仍是 `requires-python = ">=3.10"`，`tests.yml` 矩陣 `['3.10', '3.11', '3.12']`（ubuntu／macos），`test-vector-dbs.yml` 測 `3.10`、`3.12`。上游沒有停 3.10。
+- 本 fork 已在 2026-10-25 依維護者決定停 3.10（`requires-python >=3.11`），當時 Pillow 82 筆警示已全數關閉，現在沒有任何 3.10 相關的延後警示。「上游停了就跟著停、Pillow 延後一併關」這條路徑不成立（上游沒停，fork 也早已沒有該延後）。
+- 字面上「跟隨上游」等於恢復 `>=3.10`：Pillow 13.0.0 仍只支援 3.11+，恢復後 `uv.lock` 與 `requirements.txt` 的 3.10 分支會回到 Pillow 12.3.0，約 82 筆 Pillow 警示會重新開啟且沒有修補版。這與 10-25 的決定相反，本次**未恢復**，維持 3.11 最低版本，已回報派工者請維護者確認；若確認要恢復，另以獨立 commit 還原 10-25 條目列出的檔案。
+- 上游 Windows 新測試失敗：上游 CI 只跑 ubuntu／macos，不測 Windows；跟隨上游即維持 2026-10-24 條目的「不修上游的 Windows 不相容測試」，不變。
