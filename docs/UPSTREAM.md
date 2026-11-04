@@ -28,7 +28,7 @@
 
 嚴禁僅為消弭排程檢查警示或簡化維護而直接修改 `tools/upstream_baseline.json` 中的 `branch` 與 `reviewed_through`（嚴禁「改水位求綠燈」）。若未來評估切換追蹤線，必須遵守以下閘門：
 1. **先審差異**：必須先執行 `gh api repos/yusufkaraaslan/Skill_Seekers/compare/main...development`，完整審閱 `development` 領先 `main` 的所有 commits 與檔案變更。
-2. **評估衝擊**：核對版本號變更、依賴鎖檔、Windows 門禁、API 邊界與既有裁決（如 Python 3.11+ 最低版本、路徑安全守衛）。
+2. **評估衝擊**：核對版本號變更、依賴鎖檔、Windows 門禁、API 邊界與既有裁決（如 Python 最低版本跟隨上游、路徑安全守衛）。
 3. **決策記錄**：在 [維護決策](DECISIONS.md) 記載切換理由與審查細節，完成本機完整 gate 驗證後，方可推進 baseline。
 
 ### 4. 2026-10-30 上游差異比對與政策結論

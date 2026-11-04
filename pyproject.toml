@@ -7,7 +7,7 @@ name = "skill-seekers"
 version = "3.10.0"
 description = "Convert documentation websites, GitHub repositories, and PDFs into Claude AI skills. International support with Chinese (简体中文) documentation."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Yusuf Karaaslan"}
@@ -31,6 +31,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -60,6 +61,7 @@ dependencies = [
     "Pygments>=2.19.2",
     "pathspec>=0.12.1",
     "networkx>=3.0",
+    "tomli>=2.0.0; python_version < '3.11'", # TOML parser for version reading
     "schedule>=1.2.0", # Required for sync monitoring
     "PyYAML>=6.0", # Required for workflow preset management
     "langchain>=1.2.10",
@@ -396,7 +398,7 @@ exclude_lines = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -418,14 +420,13 @@ ignore = [
     "B007",   # loop control variable not used (sometimes intentional)
     "I001",   # import block unsorted (handled by formatter)
     "SIM114", # combine if branches (style preference, can reduce readability)
-    "UP042",  # str+Enum -> StrEnum changes str()/format() behaviour; keep as is
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["skill_seekers"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

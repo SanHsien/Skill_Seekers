@@ -213,7 +213,7 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **延後（附證據）**：剩下 3 筆中風險（postcss-selector-parser `< 7.1.6`，經 `tailwindcss 3.4.19` → `postcss-nested` 帶入，皆為開發期建置工具）。唯一修法是 Dependabot #18 的 `tailwindcss 3 → 4`，我在暫存分支實測：安裝 `tailwindcss@4.3.3` 後 `npm run build` 失敗（`tailwindcss` 不能再直接當 PostCSS 外掛，需改用 `@tailwindcss/postcss` 並改寫 `postcss.config.js`、`tailwind.config.js`），所以 #18 不能直接合併，已關閉。Dependabot 不接受在多套件 PR 上用 `ignore this major version`，關閉只會略過這次版本，下次 `tailwindcss` 或 `postcss-selector-parser` 發佈新版時會再開 PR；刻意不用 `ignore these dependencies`，以免擋掉 `postcss-selector-parser` 6.x 的修補版。弱點是「選擇器解析的二次方複雜度」，輸入是本專案自己的 CSS，不接收外部輸入。觸發條件：上游把 HUD 遷移到 Tailwind 4，或 `postcss-selector-parser` 6.x 發佈修補版。
 
 
-## 2026-10-25：放棄 Python 3.10 支援（最低版本 3.11）
+## 2026-10-25：放棄 Python 3.10 支援（最低版本 3.11）（已被「2026-11-04（續）：恢復 Python 3.10 支援，跟隨上游」取代）
 
 **背景**：Python 3.10 本月底 EOL。Pillow 13.0.0 需 Python ≥3.11，而 3.10 分支只能停在 12.3.0，這讓 Dependabot 對 `uv.lock` 與 `requirements.txt` 各開 41 個 Pillow 警示（共 82 個）無法關掉。維護者決定放棄 3.10。
 
@@ -279,5 +279,24 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **Python 3.10 與上游 Windows 新測試失敗（維護者 11-04 指示「跟隨上游」）的查證**：
 - 上游 `main`（`d26c2e3`）與 `development`（`5b5d8df`）今天重查都仍是 `requires-python = ">=3.10"`，`tests.yml` 矩陣 `['3.10', '3.11', '3.12']`（ubuntu／macos），`test-vector-dbs.yml` 測 `3.10`、`3.12`。上游沒有停 3.10。
 - 本 fork 已在 2026-10-25 依維護者決定停 3.10（`requires-python >=3.11`），當時 Pillow 82 筆警示已全數關閉，現在沒有任何 3.10 相關的延後警示。「上游停了就跟著停、Pillow 延後一併關」這條路徑不成立（上游沒停，fork 也早已沒有該延後）。
-- 字面上「跟隨上游」等於恢復 `>=3.10`：Pillow 13.0.0 仍只支援 3.11+，恢復後 `uv.lock` 與 `requirements.txt` 的 3.10 分支會回到 Pillow 12.3.0，約 82 筆 Pillow 警示會重新開啟且沒有修補版。這與 10-25 的決定相反，本次**未恢復**，維持 3.11 最低版本，已回報派工者請維護者確認；若確認要恢復，另以獨立 commit 還原 10-25 條目列出的檔案。
+- 字面上「跟隨上游」等於恢復 `>=3.10`：Pillow 13.0.0 仍只支援 3.11+，恢復後 `uv.lock` 與 `requirements.txt` 的 3.10 分支會回到 Pillow 12.3.0，約 82 筆 Pillow 警示會重新開啟且沒有修補版。維護者同日確認要恢復，見下一條「2026-11-04（續）」。
 - 上游 Windows 新測試失敗：上游 CI 只跑 ubuntu／macos，不測 Windows；跟隨上游即維持 2026-10-24 條目的「不修上游的 Windows 不相容測試」，不變。
+
+## 2026-11-04（續）：恢復 Python 3.10 支援，跟隨上游
+
+**決定**：維護者決定 Python 最低版本跟隨上游。上游 `main`（`d26c2e3`）與 `development`（`5b5d8df`）都是 `requires-python = ">=3.10"`，本 fork 改回 `>=3.10`，取代 2026-10-25「放棄 Python 3.10 支援」條目（`7393009`）。上游 Windows 新測試失敗也跟隨上游：上游 CI 不測 Windows，本 fork 不另外修，維持 2026-10-24 條目的做法。
+
+**做法**：以 `git revert` 還原 `7393009` 的程式與設定變更，逐一對齊上游：
+- `pyproject.toml`：`requires-python >=3.10`、恢復 3.10 classifier 與 `tomli; python_version < '3.11'`、ruff `target-version = "py310"`（移除只為 3.11 加的 `UP042` 忽略）、mypy `python_version = "3.10"`；`mypy.ini` 同步。
+- CI：`ci.yml` 矩陣恢復 3.10（3.10–3.14）；上游工作 `tests.yml`、`test-vector-dbs.yml`、`release.yml` 回到與上游相同的 3.10 設定。`tools/dev_check.ps1` 的 ruff 目標改回 `py310`；`render.yaml` 的 `PYTHON_VERSION` 回到上游的 3.10。
+- 程式：`_version.py` 恢復 `tomli` 退路，`doctor` 版本檢查回到 3.10，以及 `7393009` 用 pyupgrade 改的寫法。`embedding/server.py` 不還原：`7393009` 在這檔只拿掉多餘的 `"r"`，之後的路徑安全修正（2026-10-28）保留。10-25 之後新增的程式已查過，沒有只在 3.11 才有的語法或模組（`tomllib`、`datetime.UTC` 兩處都有 3.10 退路）。
+- 文件：README 各語言、`docs/`、安裝腳本、`FORK.md` 的版本說明改回 3.10+；`docs/fork/ROADMAP.md`、`docs/UPSTREAM.md` 的「本線維持 3.11」說法改為跟隨上游。歷史紀錄（CHANGELOG、舊 DECISIONS 條目）不改。
+- 鎖檔：`uv lock`（不升級），只把 3.10 需要的分支加回來：Pillow 12.3.0、filelock 4.1.0、networkx 3.4.2、numpy 2.2.6、scikit-learn 1.7.2、scipy 1.15.3（3.11+ 那一支維持原版本），另加回 async-timeout、backports-asyncio-runner、exceptiongroup、importlib-metadata、zipp。`requirements.txt` 的 Pillow 拆回 `13.0.0; python_version >= "3.11"` 與 `12.3.0; python_version < "3.11"`。
+
+**接受的後果（延後，無修補版）**：
+- **Pillow 在 Python 3.10**：修補版 13.0.0 的 `requires_python` 為 `>=3.11`，3.10 分支只能停在 12.3.0，`uv.lock` 與 `requirements.txt` 的 Pillow 警示會重新開啟（2026-10-25 關閉時為 82 筆）。警示維持 open，不 dismiss。
+- **filelock 在 Python 3.10**：修補版 4.2.1 的 `requires_python` 為 `>=3.11`，3.10 分支停在 4.1.0，#458、#459 這兩筆會重新開啟。filelock 只是 `huggingface-hub`、`torch` 的傳遞依賴。
+- 其他 3.10 分支的舊版本（networkx、numpy、scikit-learn、scipy）若出現警示，同樣依本條處理。
+- **觸發條件**：上游停止支援 Python 3.10（`requires-python` 提高或 CI 矩陣移除 3.10）時跟著停，屆時參考 `7393009` 重做；或 Pillow／filelock 發布支援 3.10 的修補版時升級。
+
+**branch protection**：2026-10-25 條目提到的必要檢查 `test (windows / py3.10)` 會因 CI 矩陣恢復而重新出現，不再一直 pending。

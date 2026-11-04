@@ -17,7 +17,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -860,7 +859,7 @@ def run_submit(spec: dict[str, Any]) -> int:
 
 def run_sync_check(spec: dict[str, Any]) -> int:
     """Hash a config's documentation URLs and report upstream changes."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from skill_seekers.sync.detector import ChangeDetector
 
@@ -895,7 +894,7 @@ def run_sync_check(spec: dict[str, Any]) -> int:
     failure = f"{unreachable} page(s) unreachable" if unreachable > 0 else None
     if failure:
         print(failure, flush=True)
-    now = datetime.now(UTC).isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     payload = {
         # This file is also sync.monitor's SyncState store — keep those keys
         # exactly as SyncState spells them; the UI-only keys below are extra

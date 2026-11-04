@@ -39,7 +39,7 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pathlib import Path
 
 from skill_seekers.cli.document_skill_builder import DocumentSkillBuilder
@@ -956,7 +956,7 @@ class ChatToSkillConverter(DocumentSkillBuilder):
         # Parse timestamp
         ts = raw.get("ts", "0")
         try:
-            timestamp = datetime.fromtimestamp(float(ts), tz=UTC).isoformat()
+            timestamp = datetime.fromtimestamp(float(ts), tz=timezone.utc).isoformat()
         except (ValueError, TypeError, OSError):
             timestamp = ts
 
