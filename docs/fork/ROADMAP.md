@@ -13,8 +13,8 @@
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
-| 修補或重評 chromadb 依賴 | patched version 出現、新版可用，或本專案開始提供 ChromaDB HTTP／改變 HttpClient 暴露面 | 查 `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 的 first_patched_version；最小鎖檔更新後跑 Chroma adapter 測試與 gate，核對告警 state=fixed；無修補時保留 open | Claude Opus | docs/DECISIONS.md「2026-10-28」chromadb；src/skill_seekers/cli/adaptors/chroma.py:289、310 |
-| 跟隨上游停用 Python 3.10 | 上游提高 `requires-python` 或 CI 矩陣移除 3.10；或 Pillow／filelock 發布支援 3.10 的修補版 | 參考 `7393009` 改 `requires-python`、CI、文件並重新產生鎖檔；`dev_check` 綠，核對 Pillow 與 filelock 的 3.10 分支警示 state=fixed | Claude Opus | docs/DECISIONS.md「2026-11-04（續）」 |
+| 修補或重評 chromadb 依賴 | patched version 出現、新版可用，或本專案開始提供 ChromaDB HTTP／改變 HttpClient 暴露面 | 查 `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 的 first_patched_version；最小鎖檔更新後跑 Chroma adapter 測試與 gate，核對告警 state=fixed；無修補時維持已 dismiss（2026-11-08 維護者指示），出現修補版時重開並升級 | Claude Opus | docs/DECISIONS.md「2026-10-28」「2026-11-08」chromadb；src/skill_seekers/cli/adaptors/chroma.py:289、310 |
+| 跟隨上游停用 Python 3.10 | 上游提高 `requires-python` 或 CI 矩陣移除 3.10；或 Pillow／filelock 發布支援 3.10 的修補版 | 參考 `7393009` 改 `requires-python`、CI、文件並重新產生鎖檔；`dev_check` 綠，核對 Pillow 與 filelock 的 3.10 分支警示（現為 dismissed，2026-11-08）已由重掃關閉為 fixed | Claude Opus | docs/DECISIONS.md「2026-11-04（續）」「2026-11-08」 |
 | 隨選定追蹤線採用上游修正 | 上游合併既有待審 PR，或新增 commit 命中本線功能 | 逐筆核對 MCP null 參數與 provider 行為，Python 最低版本跟隨上游，保留允許路徑與發布 guard；產品回歸相對基準無新增失敗，維護 gate 通過才更新水位 | Codex | docs/DECISIONS.md「2026-10-24」PR／issue 軸；tools/upstream_baseline.json |
 | 補查 Windows 路徑邊界與工具顯示候選問題 | 實際以磁碟根目錄當 skill 路徑、cp950 主控台或帶標題／程式碼區塊連結觸發問題 | 先重現才修；根目錄合法輸入可讀，兄弟目錄、穿越與連接點逃逸仍拒絕；工具不因輸出編碼崩潰，連結案例不誤判 | Codex | 深掃報告（2026-10-2x）「未修候選」；docs/DECISIONS.md「2026-10-28」embedding |
 | 重評 API 路徑信任範圍 | user_path 放寬，或新增 HTTP 端點直接操作請求中的路徑 | 對新端點測工作區外、允許根目錄、連接點與可信快取案例；重新核對原 CodeQL dismiss 理由，不能沿用舊裁決作自動豁免 | Claude Opus | docs/DECISIONS.md「2026-10-25：把本機使用者指定路徑的 API 端點改成真檢查」 |
@@ -23,7 +23,6 @@
 | 不做什麼 | 理由 | 什麼情況下重新考慮 |
 | --- | --- | --- |
 | 覆寫根目錄上游 ROADMAP 或承諾其中所有產品功能 | 根目錄 ROADMAP.md 屬上游產品，本檔才是 fork 待辦來源 | 維護者選定具體需求與驗收範圍 |
-| 無修補版時 dismiss chromadb，或因 CodeQL 為零宣稱全部風險消失 | chromadb 延後與已 dismiss 告警各有不同理由，見 docs/DECISIONS.md | 出現修補或威脅模型改變；dismiss 需另作明確決定 |
 | 全面重寫上游 Windows 測試 | 跟隨上游（上游 CI 不測 Windows），見 docs/DECISIONS.md「2026-11-04（續）」；維護 CI 不等於全產品測試成功 | 維護者授權平台測試工程或上游完成相容修正 |
 | 把舊 TOML 報告直接當現存缺陷，或為無共同祖先強推 | 現行 config_extractor.py 已含 tomllib fallback；無共同祖先是已知歷史 | 有新的可重現 TOML 問題；歷史變更需另外授權 |
 

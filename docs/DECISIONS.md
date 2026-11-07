@@ -316,3 +316,22 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 **oauthlib（#487，GHSA-3jp2-3mrg-2vxc／CVE-2026-49272，high，影響 `>=3.3.0 <4.0.1`，修補版 4.0.1）— 修補**：`uv lock --upgrade-package oauthlib==4.0.1`，鎖檔只有 oauthlib 4.0.0 → 4.0.1 三行（PyPI 發布於 2026-10-31，`requires_python >=3.9`，3.10 分支也適用）。與 Dependabot PR #29 目標版本相同，但 #29 另把 `revision` 改成 5 並重解 onnxruntime 等（+90/−8）；本次是最小差異，推送後以 superseded 關閉 #29。#29 的 CI（CI、CodeQL）全綠。
 
 **filelock 延後清單**：#458、#459、#472–#486 維持延後，理由與觸發條件同 2026-11-04（續）。Pillow 與 chromadb 同樣不變。
+
+## 2026-11-08：依維護者指示 dismiss 無法處置的 Dependabot 警示
+
+**決定**：維護者 2026-11-08 指示「告警沒必要開著的就關」。這取代 2026-09-29、2026-10-28、2026-11-04（續）、2026-11-07 各條目中「警示維持 open，不 dismiss」的規則：無法處置的警示一律 dismiss 並附理由與重開條件；可修的仍然先修。
+
+**查證（2026-11-08）**：
+- `requirements.txt` 已拆開：`Pillow==13.0.0; python_version >= "3.11"` 與 `Pillow==12.3.0; python_version < "3.11"`。`uv.lock` 的 pillow 12.3.0 只掛 `python_full_version < '3.11'`，13.0.0 掛 3.11+ 各分支；filelock 同理（4.1.0 只掛 `< '3.11'`，其餘 4.2.1）。3.11+ 路徑早已是修補版，沒有可再修的地方。
+- 修補版 Pillow 13.0.0、filelock 4.2.1 的 `requires_python` 都是 `>=3.11`；上游 `main`、`development` 仍是 `requires-python = ">=3.10"`；chromadb PyPI 最新仍是 1.5.9，`first_patched_version` 為空。
+- 警示實際為 open 103 筆，不是原先估計的 58：Pillow 82（`requirements.txt` 41、`uv.lock` 41）、filelock 17、chromadb 4。minimatch #488 已是 fixed（`4db4193` 的 `overrides`），不在 open 清單。
+
+**處置（全部 `tolerable_risk`，皆附理由與重開條件）**：
+
+| 群組 | 筆數 | 理由 | 重開條件 |
+|------|------|------|----------|
+| Pillow（`requirements.txt` 41、`uv.lock` 41） | 82 | 3.10 分支只能停在 12.3.0，修補版 13.0.0 需 Python >=3.11；3.11+ 已是 13.0.0；上游仍支援 3.10 | 本 fork 停 3.10（`requires-python` 提高並移除 3.10 分支），或 Pillow 對 12.x 回補修補版 |
+| filelock（`uv.lock`：#458、#459、#472–#486） | 17 | 3.10 分支只能停在 4.1.0，修補版 4.2.1 需 >=3.11；3.11+ 已是 4.2.1；只是 `huggingface-hub`、`torch` 的傳遞依賴 | 同上，或 filelock 發布支援 3.10 的修補版 |
+| chromadb（`uv.lock`：#115、#222–#224） | 4 | 無修補版；漏洞在 ChromaDB HTTP 伺服器，本專案只當用戶端、不啟動伺服器（見 2026-09-29、2026-10-28 條目）。GitHub 沒有 `vulnerable_code_not_used` 選項，故用 `tolerable_risk` | chromadb 發布 > 1.5.9 的版本，或本專案開始自行啟動 ChromaDB 伺服器 |
+
+dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程式或鎖檔；之後 3.10 分支的 networkx、numpy、scikit-learn、scipy 若再出現警示，同樣先確認 3.11+ 路徑已是修補版，再依本條 dismiss。**重開方式**：條件成立時在 GitHub 重開該警示，或停 3.10 時直接升級後由重掃關閉。
