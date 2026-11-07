@@ -272,7 +272,7 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | langgraph-sdk | 0.4.5 → 0.4.6 | medium 1（#456） | patch |
 | joserfc | 1.7.5 → 1.7.6 | medium 1（#460） | patch |
 
-**延後：minimatch（#455，2026-11-06 撤回後以同一 GHSA-g3hv-75wg-m249 重開為 #488；medium，`ui/package-lock.json`，開發期傳遞依賴）**：唯一修補版是 11.0.1（2026-10-27 發布），3.x、9.x、10.x 都沒有回補。鎖檔裡的 `minimatch 3.1.5` 來自 `eslint 9.39.2`、`@eslint/eslintrc`、`@eslint/config-array`（`^3.1.2`），`9.0.9` 來自 `@typescript-eslint/typescript-estree 8.52.0`（`^9.0.5`）；即使升到目前最新的 `eslint 10.14.0`、`typescript-estree 8.72.1`，需求也只到 `^10.2.x`，仍在受影響範圍內。用 `overrides` 強制 11.x 會跨兩到三個大版本（3.x 是 CommonJS 預設匯出函式，11.x 是 ESM 具名匯出），會讓 lint 工具鏈壞掉，故不做。弱點是 glob 樣式展開的阻斷服務，輸入是本專案自己的 lint 設定與檔案路徑，不接收外部輸入，也不進 HUD 執行期。警示維持 open，不 dismiss。**觸發條件**：`eslint` 或 `typescript-eslint` 的版本改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版。
+**延後：minimatch（2026-11-07 更正：3.1.5 不在受影響範圍）（#455，2026-11-06 撤回後以同一 GHSA-g3hv-75wg-m249 重開為 #488；medium，`ui/package-lock.json`，開發期傳遞依賴）**：唯一修補版是 11.0.1（2026-10-27 發布），3.x、9.x、10.x 都沒有回補。鎖檔裡的 `minimatch 3.1.5` 來自 `eslint 9.39.2`、`@eslint/eslintrc`、`@eslint/config-array`（`^3.1.2`），`9.0.9` 來自 `@typescript-eslint/typescript-estree 8.52.0`（`^9.0.5`）；即使升到目前最新的 `eslint 10.14.0`、`typescript-estree 8.72.1`，需求也只到 `^10.2.x`，仍在受影響範圍內。用 `overrides` 強制 11.x 會跨兩到三個大版本（3.x 是 CommonJS 預設匯出函式，11.x 是 ESM 具名匯出），會讓 lint 工具鏈壞掉，故不做。弱點是 glob 樣式展開的阻斷服務，輸入是本專案自己的 lint 設定與檔案路徑，不接收外部輸入，也不進 HUD 執行期。警示維持 open，不 dismiss。**觸發條件**：`eslint` 或 `typescript-eslint` 的版本改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版。
 
 **延後：chromadb 4 筆（#115、#222–#224）**：PyPI 最新仍是 1.5.9，`first_patched_version` 皆空，理由與觸發條件沿用 2026-10-28 條目，不變。
 
@@ -300,3 +300,19 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 - **觸發條件**：上游停止支援 Python 3.10（`requires-python` 提高或 CI 矩陣移除 3.10）時跟著停，屆時參考 `7393009` 重做；或 Pillow／filelock 發布支援 3.10 的修補版時升級。
 
 **branch protection**：2026-10-25 條目提到的必要檢查 `test (windows / py3.10)` 會因 CI 矩陣恢復而重新出現，不再一直 pending。
+
+## 2026-11-07：Dependabot 兩個失敗 job（minimatch、filelock）與 oauthlib／minimatch 修補
+
+**失敗原因（Dependabot run 42209416543、42209416317，皆 `security_update_not_possible`）**：
+- `npm_and_yarn in /ui for minimatch`：`@typescript-eslint/typescript-estree 8.52.0` 以 `^9.0.5` 需要 minimatch，Dependabot 只肯在父套件範圍內升級（最高 9.0.9），而修補版是 11.0.1，它的替代路徑要把 `typescript-eslint` 從 8.52.0 降到 8.36.0，所以放棄。這是 Dependabot 的限制，不是套件沒有修補版。
+- `uv in /. for filelock`：Python 3.10 分支只能裝 filelock 4.1.0（4.1.1 起要求 `>=3.11`），修補版 4.2.1 被 3.10 過濾掉（log：`Filtered out filelock 4.1.2 because python requirement >= 3.11 is not satisfied by python 3.10.22`）。這就是 2026-11-04（續）已接受的延後，原因沒變。
+
+**minimatch（#488，GHSA-g3hv-75wg-m249／CVE-2026-118764，medium，影響 `>=7.0.0 <11.0.1`，修補版 11.0.1）— 修補，取代 2026-11-04 的延後**：
+- 重新查鎖檔：真正落在影響範圍的只有 `typescript-estree` 底下那一份 9.0.9；`eslint`、`@eslint/config-array`、`@eslint/eslintrc` 用的 3.1.5 低於 7.0.0，不在範圍內。先前「用 overrides 會讓 3.x 跨三個大版本」的顧慮不適用於這個警示。
+- 做法：`ui/package.json` 加範圍限定的 `overrides`，只在 `@typescript-eslint/typescript-estree` 之下覆寫 `minimatch` 為 `11.0.1`（第一個修補版，2026-10-27 發布，已超過 10 天），並把它新帶的 `@isaacs/nonrecursive-glob-match` 釘在 `1.0.3`（2026-10-28 發布；`1.1.0` 於 2026-11-05T21:38Z 才發布，未滿冷卻期，且 minimatch 11.0.1 只要求 `^1.0.1`）；不動 3.1.5 那一份。巢狀 override 有生效。`npm install --package-lock-only` 重產鎖檔，差異只有 minimatch 9.0.9 → 11.0.1，加上它新帶的依賴，三個新套件都在 `typescript-estree/node_modules` 之下、沒有被提升到頂層：`brace-expansion` 2.1.7 → 5.0.12（2026-09-14 發布）、`balanced-match` 新增 4.0.4（2026-02-22 發布）、`@isaacs/nonrecursive-glob-match` 新增 1.0.3（2026-10-28 發布）。
+- 驗證：`npm ci`、`npm run lint`、`npm run build` 全過，`npm audit` 0 筆。`npm test`（playwright）需要瀏覽器與後端，未跑。
+- 取捨：`ui/package.json` 因此多一個 `overrides` 區塊，與上游 `ui/` 有差異。**觸發條件**：`typescript-eslint` 改依賴 `minimatch >=11.0.1` 時移除 `overrides`。
+
+**oauthlib（#487，GHSA-3jp2-3mrg-2vxc／CVE-2026-49272，high，影響 `>=3.3.0 <4.0.1`，修補版 4.0.1）— 修補**：`uv lock --upgrade-package oauthlib==4.0.1`，鎖檔只有 oauthlib 4.0.0 → 4.0.1 三行（PyPI 發布於 2026-10-31，`requires_python >=3.9`，3.10 分支也適用）。與 Dependabot PR #29 目標版本相同，但 #29 另把 `revision` 改成 5 並重解 onnxruntime 等（+90/−8）；本次是最小差異，推送後以 superseded 關閉 #29。#29 的 CI（CI、CodeQL）全綠。
+
+**filelock 延後清單**：#458、#459、#472–#486 維持延後，理由與觸發條件同 2026-11-04（續）。Pillow 與 chromadb 同樣不變。
