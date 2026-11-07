@@ -272,7 +272,7 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | langgraph-sdk | 0.4.5 → 0.4.6 | medium 1（#456） | patch |
 | joserfc | 1.7.5 → 1.7.6 | medium 1（#460） | patch |
 
-**延後：minimatch（#455，medium，`ui/package-lock.json`，開發期傳遞依賴）**：唯一修補版是 11.0.1（2026-10-27 發布），3.x、9.x、10.x 都沒有回補。鎖檔裡的 `minimatch 3.1.5` 來自 `eslint 9.39.2`、`@eslint/eslintrc`、`@eslint/config-array`（`^3.1.2`），`9.0.9` 來自 `@typescript-eslint/typescript-estree 8.52.0`（`^9.0.5`）；即使升到目前最新的 `eslint 10.14.0`、`typescript-estree 8.72.1`，需求也只到 `^10.2.x`，仍在受影響範圍內。用 `overrides` 強制 11.x 會跨兩到三個大版本（3.x 是 CommonJS 預設匯出函式，11.x 是 ESM 具名匯出），會讓 lint 工具鏈壞掉，故不做。弱點是 glob 樣式展開的阻斷服務，輸入是本專案自己的 lint 設定與檔案路徑，不接收外部輸入，也不進 HUD 執行期。警示維持 open，不 dismiss。**觸發條件**：`eslint` 或 `typescript-eslint` 的版本改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版。
+**延後：minimatch（#455，2026-11-06 撤回後以同一 GHSA-g3hv-75wg-m249 重開為 #488；medium，`ui/package-lock.json`，開發期傳遞依賴）**：唯一修補版是 11.0.1（2026-10-27 發布），3.x、9.x、10.x 都沒有回補。鎖檔裡的 `minimatch 3.1.5` 來自 `eslint 9.39.2`、`@eslint/eslintrc`、`@eslint/config-array`（`^3.1.2`），`9.0.9` 來自 `@typescript-eslint/typescript-estree 8.52.0`（`^9.0.5`）；即使升到目前最新的 `eslint 10.14.0`、`typescript-estree 8.72.1`，需求也只到 `^10.2.x`，仍在受影響範圍內。用 `overrides` 強制 11.x 會跨兩到三個大版本（3.x 是 CommonJS 預設匯出函式，11.x 是 ESM 具名匯出），會讓 lint 工具鏈壞掉，故不做。弱點是 glob 樣式展開的阻斷服務，輸入是本專案自己的 lint 設定與檔案路徑，不接收外部輸入，也不進 HUD 執行期。警示維持 open，不 dismiss。**觸發條件**：`eslint` 或 `typescript-eslint` 的版本改依賴 `minimatch >=11.0.1`，或 3.x／9.x／10.x 出現修補版。
 
 **延後：chromadb 4 筆（#115、#222–#224）**：PyPI 最新仍是 1.5.9，`first_patched_version` 皆空，理由與觸發條件沿用 2026-10-28 條目，不變。
 
