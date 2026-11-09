@@ -24,6 +24,7 @@ Usage:
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from importlib.resources import files as importlib_files
@@ -256,6 +257,23 @@ class WorkflowEngine:
 
         return merged
 
+    def preview(self, context: dict | None = None) -> None:
+        """Dry-run preview: log the stages that would run (no AI calls)."""
+        logger.info(f"Workflow: {self.workflow.name} - {len(self.workflow.stages)} stage(s)")
+        for i, stage in enumerate(self.workflow.stages, 1):
+            status = "enabled" if stage.enabled else "disabled"
+            logger.info(
+                f"   {i}. [{stage.type}] {stage.name} (target={stage.target}, "
+                f"uses_history={stage.uses_history}) - {status}"
+            )
+            if stage.type == "custom" and stage.prompt:
+                logger.info(f"      prompt: {stage.prompt.strip().splitlines()[0][:100]}")
+        if context:
+            logger.info(
+                "   context variables: " + ", ".join(f"{k}={v!r}" for k, v in context.items())[:300]
+            )
+        logger.info("   (no AI calls were made - dry run)")
+
     def run(self, analysis_results: dict, context: dict | None = None) -> dict:
         """
         Run workflow stages sequentially.
@@ -391,12 +409,14 @@ class WorkflowEngine:
 
             self.enhancer = AIEnhancer(agent=self.agent)
 
-        # Format prompt with context
-        try:
-            formatted_prompt = stage.prompt.format(**context)
-        except KeyError as e:
-            logger.warning(f"Missing context variable: {e}")
-            formatted_prompt = stage.prompt
+        # Tolerant substitution: only well-formed simple fields ({var}) found in
+        # the context are replaced. Literal JSON braces and unknown fields stay
+        # untouched (str.format() raised on them and dropped all substitution).
+        def _substitute(match: "re.Match[str]") -> str:
+            key = match.group(1)
+            return str(context[key]) if key in context else match.group(0)
+
+        formatted_prompt = re.sub(r"\{([a-zA-Z_]\w*)\}", _substitute, stage.prompt)
 
         # Call AI with custom prompt
         logger.info(f"   🤖 Running custom AI prompt...")

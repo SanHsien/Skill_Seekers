@@ -278,8 +278,10 @@ def parse_vtt(path: str) -> list[TranscriptSegment]:
                 in_cue = False
 
         elif in_cue:
-            # Skip cue identifiers (numeric lines before timestamps)
-            if not line.isdigit():
+            # A numeric line is a cue identifier only when the next line is the
+            # timing line; otherwise it is spoken text (e.g. a cue reading "2026").
+            is_identifier = line.isdigit() and i < len(lines) and "-->" in lines[i]
+            if not is_identifier:
                 current_text_lines.append(line)
 
     # Handle last cue
