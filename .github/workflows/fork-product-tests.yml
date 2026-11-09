@@ -28,9 +28,6 @@ jobs:
     env:
       PYTHONUTF8: "1"
       PYTHONIOENCODING: "utf-8"
-      # Keep tests that write under the home directory off the runner profile.
-      HOME: ${{ runner.temp }}\home
-      USERPROFILE: ${{ runner.temp }}\home
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,6 +47,11 @@ jobs:
 
       - name: Run fork product tests (offline subset)
         shell: pwsh
+        # The runner context is only available at step level, not in job-level env.
+        # Keep tests that write under the home directory off the runner profile.
+        env:
+          HOME: ${{ runner.temp }}\home
+          USERPROFILE: ${{ runner.temp }}\home
         run: |
           New-Item -ItemType Directory -Force -Path $env:USERPROFILE | Out-Null
           $files = Get-Content tools/fork_product_tests.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") }

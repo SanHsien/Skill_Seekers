@@ -93,3 +93,17 @@ def test_workflow_isolates_home_and_pins_python() -> None:
     assert "New-Item -ItemType Directory" in text
     pytest_line = next(line for line in text.splitlines() if "-m pytest" in line)
     assert "--python 3.12" in pytest_line
+
+
+def test_runner_context_is_not_used_in_job_level_env() -> None:
+    """GitHub rejects the whole workflow when job-level env reads `runner.*`."""
+    lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
+    job_env = False
+    for line in lines:
+        if line == "    env:":
+            job_env = True
+            continue
+        if job_env and not line.startswith("      "):
+            job_env = False
+        if job_env:
+            assert "runner." not in line, line
