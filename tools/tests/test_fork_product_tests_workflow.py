@@ -15,6 +15,8 @@ REQUIRED_PORTED_TESTS = (
     "tests/test_heading_headerlinks.py",
     "tests/test_adaptors/test_enhance_via_agent_client.py",
     "tests/test_codeql_hardening.py",
+    "tests/test_embedding_server.py",
+    "tests/test_source_detector.py",
 )
 
 
@@ -74,3 +76,20 @@ def test_upstream_tests_workflow_is_left_to_upstream() -> None:
     text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
     assert "yusufkaraaslan/Skill_Seekers" in text
     assert "SanHsien" not in text
+
+
+def test_workflow_list_reader_trims_and_skips_comments_like_the_python_reader() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    reader = next(line for line in text.splitlines() if "Get-Content tools/fork_product_tests.txt" in line)
+    assert "$_.Trim()" in reader
+    assert 'StartsWith("#")' in reader
+    assert "$_ -and" in reader
+
+
+def test_workflow_isolates_home_and_pins_python() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "HOME: ${{ runner.temp }}" in text
+    assert "USERPROFILE: ${{ runner.temp }}" in text
+    assert "New-Item -ItemType Directory" in text
+    pytest_line = next(line for line in text.splitlines() if "-m pytest" in line)
+    assert "--python 3.12" in pytest_line

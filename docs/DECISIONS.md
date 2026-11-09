@@ -363,4 +363,6 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 
 **其他取捨**：只跑 Python 3.12 一格（`ci.yml` 已用 3.10–3.14 矩陣驗證 `tools/tests`；產品測試每多一格多 25 秒以上，但本機只驗過 3.12／3.13，未驗證的格子不先放進去）。不安裝 `pytest-timeout`（不在 `uv.lock` 內，為此另裝浮動版本會破壞 `--locked`）、不用 `scripts/run_tests_safe.py`（它是為記憶體受限的上游 runner 寫的守衛）；job 的 `timeout-minutes` 是上限。清單新增規則：fork 提交新增或修改 `tests/` 檔時，同一個 commit 把它加進 `tools/fork_product_tests.txt`；`tools/tests/test_fork_product_tests_workflow.py` 釘住「清單檔案都存在、不重複、保留這批移植測試」與 workflow 的守衛、Windows runner、SHA 釘選、最小權限。
 
+**家目錄隔離（追加）**：獨立審查實跑時，清單內測試會寫 `.cache/skill-seekers/embeddings/embeddings.db`、`.config/miopen` 到家目錄；本機用同指令重跑也曾寫壞真實的 `~/.claude/skills/demo`。job 因此把 `HOME`、`USERPROFILE` 指到 `runner.temp` 下的 `home` 並先建立；主 `uv run` 明寫 `--python 3.12`；清單讀取先 `Trim()` 再略過空行與 `#`，與 `_listed_tests()` 一致。本機重跑請同樣把兩個變數指到暫存目錄。
+
 **`pytest.ci.ini` 的說明**：它是上游檔，沒有被任何 workflow 引用，本 fork 不改。它 collect 0 個測試的正確原因是 ini 格式不認 TOML 清單語法：`testpaths = ["tests"]` 被當成字面字串 `["tests"]`（同理 `python_files`、`python_classes`），所以找不到路徑，與測試本身無關。
