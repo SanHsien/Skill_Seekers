@@ -347,3 +347,20 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 | chromadb（`uv.lock`：#115、#222–#224） | 4 | 無修補版；漏洞在 ChromaDB HTTP 伺服器，本專案只當用戶端、不啟動伺服器（見 2026-09-29、2026-10-28 條目）。GitHub 沒有 `vulnerable_code_not_used` 選項，故用 `tolerable_risk` | chromadb 發布 > 1.5.9 的版本，或本專案開始自行啟動 ChromaDB 伺服器 |
 
 dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程式或鎖檔；之後 3.10 分支的 networkx、numpy、scikit-learn、scipy 若再出現警示，同樣先確認 3.11+ 路徑已是修補版，再依本條 dismiss。**重開方式**：條件成立時在 GitHub 重開該警示，或停 3.10 時直接升級後由重掃關閉。
+
+## 2026-11-10：fork 自己的產品測試 job（`fork-product-tests.yml`）
+
+**缺口**：上游 `tests.yml` 的每個 job 都有 `if: github.repository == 'yusufkaraaslan/Skill_Seekers'`，fork 上整份被略過（檔內沒寫理由；從內容看是它用 ubuntu／macOS 矩陣、Codecov 上傳、Playwright 瀏覽器與 `ui/` 建置，不是為 Windows fork 設計的）。`ci.yml` 跑 `tools/dev_check.ps1`，只測 `tools/tests`。結果是 fork 改 `src/`（`28d65ab`、`c709c93`、CodeQL 修補）時，新增的 `tests/` 測試只在本機驗過，CI 沒有人跑。
+
+**決定**：新增 `.github/workflows/fork-product-tests.yml`（`if: github.repository == 'SanHsien/Skill_Seekers'`，`windows-latest`、Python 3.12），不動 `tests.yml`。依賴用 `uv sync --locked --extra mcp --extra ui`（與 `ci.yml` 的 security job 同一個 uv 版本與鎖檔做法，避免另一套浮動版本）。action 釘 SHA、`permissions: contents: read`、`timeout-minutes: 25`、`concurrency` 照 `ci.yml`。
+
+**範圍：明確清單，不是整個 `tests/`**。清單在 `tools/fork_product_tests.txt`（21 檔），內容是 `git log` 查到的 fork 作者提交（`7d055a8`、`a554f53`、`e2aea07`、`8e8c736`、`0f44a45`、`a45d142`、`0405dfd`、`9b15bc0`、`28d65ab`、`c709c93`）新增或修改的測試檔，加上同模組的鄰近測試（workflow、video、path safety）。再加 marker 篩選 `not integration and not e2e and not network and not slow`。理由：
+
+- 在 `8eaff3f` 上以相同 marker 跑整個 `tests/`：116 failed、1 error、4297 passed、82 skipped，耗時 7 分 41 秒；失敗包含 `test_web_*`、`test_marketplace_publisher.py`，另有 `test_bootstrap_skill.py` 的 1 個 error，且 `test_web_regressions.py` 會寫入真實的使用者 skills 目錄（`FileExistsError: ...\.claude\skills\demo already exists`）。把整套放進 CI 不是「補覆蓋」，是一條天天紅、又吃 8 分鐘的 job，紅燈會被習慣性忽略。另一次把 `HOME`／`USERPROFILE` 指到暫存目錄重跑，在 `test_mcp_fastmcp.py` 卡住超過 6 分鐘無輸出，需手動終止。
+- 清單子集（含 `tests/test_vtt_numeric_cue.py`、`tests/test_workflow_preview_substitution.py`）以 CI 同一組指令在 Python 3.12 跑：660 passed、7 skipped（OpenCV 不可用）、25 deselected，pytest 計時 22.6 秒。
+
+**刻意排除 `tests/test_web_api.py`**（fork 在 CodeQL 修補時改過它）：12 個測試在 Windows 失敗，原因是 fixture 只設 `HOME`（`monkeypatch.setenv("HOME", ...)`），而 Windows 的 `Path.home()` 讀 `USERPROFILE`（實測 `HOME=/x/fake USERPROFILE=C:\real` 時回傳 `C:\real`），所以隔離不成立、測到的是真實使用者目錄。這是上游測試對 POSIX 的假設，不是產品缺陷；改上游測試會與上游分歧。觸發重看：上游 fixture 改成同時設 `USERPROFILE`，或本 fork 決定加 ubuntu 腿專跑該檔。
+
+**其他取捨**：只跑 Python 3.12 一格（`ci.yml` 已用 3.10–3.14 矩陣驗證 `tools/tests`；產品測試每多一格多 25 秒以上，但本機只驗過 3.12／3.13，未驗證的格子不先放進去）。不安裝 `pytest-timeout`（不在 `uv.lock` 內，為此另裝浮動版本會破壞 `--locked`）、不用 `scripts/run_tests_safe.py`（它是為記憶體受限的上游 runner 寫的守衛）；job 的 `timeout-minutes` 是上限。清單新增規則：fork 提交新增或修改 `tests/` 檔時，同一個 commit 把它加進 `tools/fork_product_tests.txt`；`tools/tests/test_fork_product_tests_workflow.py` 釘住「清單檔案都存在、不重複、保留這批移植測試」與 workflow 的守衛、Windows runner、SHA 釘選、最小權限。
+
+**`pytest.ci.ini` 的說明**：它是上游檔，沒有被任何 workflow 引用，本 fork 不改。它 collect 0 個測試的正確原因是 ini 格式不認 TOML 清單語法：`testpaths = ["tests"]` 被當成字面字串 `["tests"]`（同理 `python_files`、`python_classes`），所以找不到路徑，與測試本身無關。
