@@ -259,6 +259,18 @@ PR #13 合併後出現 4 筆新警示（皆為 `uv.lock`）：pypdf high 3 筆�
 
 驗證：新舊相關測試（`test_heading_headerlinks.py`、`test_enhance_via_agent_client.py`、`test_scraper_features.py`）全過；`test_claude_adaptor.py` 的 3 個 upload 測試在乾淨環境（anthropic 2.x）失敗，與本次改動無關（未碰 upload 程式碼）。
 
+## 2026-11-10：上游 PR #482–#483 與 issue #481
+
+三個項目都取目前的 head 讀完 diff（`gh pr diff`，#482 共 164 行、#483 共 472 行），並用 `grep -nE '\S\s{40,}\S|eval\(|new Function|globalThis|[A-Za-z0-9+/]{120,}'` 掃隱藏內容，兩份 diff 皆無命中；兩個 PR 與 issue 均無留言與 review。commit 軸無新增（仍是 `d26c2e3`）。#483 的 diff 內含 #482 全部四個檔案（疊在 #482 之上）。
+
+| 項目 | 狀態與 head | 裁決 | 證據與理由 |
+| --- | --- | --- | --- |
+| PR #482（workflow 增強：context 傳遞、寬鬆代換、dry-run 修復、深度優先驗證） | open，`eaeb401`，+86／-13，4 檔 | **部分採用（移植兩處缺陷修正），其餘條件式（釘 monitored）** | 移植：`workflow_runner.py` 的 `--workflow-dry-run` 呼叫 `engine.preview()`，本 fork 的 `WorkflowEngine` 沒有此方法，補回；`_run_custom_stage` 原本用 `str.format(**context)`，prompt 內的 JSON 字面大括號會讓代換全部失效，改為只代換 `{var}` 形式且存在於 context 的欄位。兩者各有先紅後綠測試（`tests/test_workflow_preview_substitution.py`）。未移植：`create_command._run_workflows` 傳入 skill 目錄 context、`default.yaml` 的 `skill_polish` 提示詞改寫、`enhance_skill_local` 的驗證段落改寫（A/B/C 標註、`SHRINK_LOG.md`、`EVAL.md`）。這三者改變增強輸出的行為與提示詞設計，不是缺陷修正，且 PR 自述驗證只有 `py_compile` 與一次 mock 執行。觸發重看：PR 合併進上游 `main`，或 head 不再是 `eaeb401`／狀態離開 open（`monitored` 會報）。fork 對上游檔的改寫登記：`enhancement_workflow.py` 的 `preview()` 與代換邏輯是 PR 內容的子集，措辭自寫。 |
+| PR #483（文件型 SKILL.md 範本：資料驅動的 When to Use、無空 Quick Reference） | open，`ebed7f5`，+171／-88，16 檔 | **條件式（釘 monitored）** | 缺陷描述屬實（模板文字對所有文件相同），但修法改變 `document_skill_builder.py` 與 PDF 的 SKILL.md 輸出，並重生 9 份 golden；屬產品輸出版型，且疊在未合併的 #482 之上（PR 自述為其後續）。等 #482 與本 PR 合併後隨 commit 軸同步。觸發重看：head 不再是 `ebed7f5` 或狀態離開 open。 |
+| issue #481（WebVTT 只有數字的 cue 被丟掉） | open，無留言、無對應 PR | **採用（最小修）** | 缺陷存在：`video_transcript.py` 的 `parse_vtt` 在 cue 內一律略過 `isdigit()` 的行，把 `2026` 這種內文當成 cue 識別碼。改為只有「下一行是時間行」時才視為識別碼，新增 `tests/test_vtt_numeric_cue.py`（無空行分隔的識別碼仍被略過）。 |
+
+驗證：先紅——新增的三個測試修補前失敗（`test_preview_lists_stages_without_calling_ai`、`test_custom_prompt_keeps_literal_json_braces_and_substitutes_context`、`test_numeric_only_cue_text_is_kept`），修補後與 `test_workflow_runner.py`、`test_workflow_prompt_injection.py`、`test_workflows_command.py`、`test_video_scraper.py` 合跑 309 passed、7 skipped（OpenCV 不可用）。
+
 ## 2026-11-04：Dependabot PR #23／#24、11-03 起的新警示，與 Python 3.10 跟隨上游的查證
 
 **PR**：#23（pyasn1 0.6.4 → 0.6.5）、#24（pypdf 6.21.2 → 6.21.4）都是 patch 升版、只改 `uv.lock`，CI（Windows py3.11–3.14、Python security scan、CodeQL）全綠，以 squash 合併（`e68e951`、`17b9dc6`），涵蓋 pypdf 7 筆、pyasn1 4 筆警示。

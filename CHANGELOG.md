@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fork maintenance: upstream PR #478 ported (open upstream at head 85cd5ad): `doc_scraper` drops `a.headerlink` anchors before reading heading text, so MkDocs/Sphinx pilcrows no longer land in `**Contents:**`. Upstream issue #480: the Claude adaptor no longer sends `temperature` (rejected by newer models).
+- Fork maintenance: upstream PR #482 partially ported (open upstream at head eaeb401): `WorkflowEngine.preview()` is restored so `--workflow-dry-run` no longer crashes, and custom stage prompts substitute only well-formed `{var}` fields so literal JSON braces no longer disable all context substitution. Upstream issue #481: `parse_vtt` keeps cue text that is only digits.
 - Fork maintenance: normalize dependency names according to PEP 503 when loading and looking up deferrals and deduplicating direct requirements. Equivalent case, dot, underscore, and repeated separator spellings now share the reviewed deferral, while newer releases still expire it and reports retain the declared spelling.
 
 ## [3.10.0] - 2026-09-30
