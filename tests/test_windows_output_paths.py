@@ -109,3 +109,21 @@ def test_llms_txt_downloader_filename_for_existing_urls_is_unchanged():
         "llms-full.md"
     )
     assert LlmsTxtDownloader("https://hono.dev/llms.txt").get_proper_filename() == "llms.md"
+
+
+def test_drive_root_output_keeps_its_root_anchor():
+    """F5: --output C:\ must stay C:\. Stripping it to "C:" made it drive-relative, so
+    os.path.join("C:", "SKILL.md") named a file in whatever directory C: last used."""
+    from skill_seekers.cli.skill_converter import SkillConverter
+
+    resolve = SkillConverter.resolve_skill_dir
+    assert resolve({"output_dir": "C:" + BACKSLASH}, "n") == "C:" + BACKSLASH
+    assert resolve({"output_dir": "C:/"}, "n") == "C:/"
+    assert resolve({"output_dir": "C:" + BACKSLASH + "out" + BACKSLASH}, "n") == "C:" + (
+        BACKSLASH + "out"
+    )
+    assert resolve({"output_dir": "C:/out/"}, "n") == "C:/out"
+    assert ntpath.isabs(ntpath.join(resolve({"output_dir": "C:" + BACKSLASH}, "n"), "SKILL.md"))
+    assert ntpath.join(resolve({"output_dir": "C:" + BACKSLASH}, "n"), "SKILL.md") == (
+        "C:" + BACKSLASH + "SKILL.md"
+    )

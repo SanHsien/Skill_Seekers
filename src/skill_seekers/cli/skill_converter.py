@@ -42,8 +42,15 @@ class SkillConverter:
         ``f"{skill_dir}_extracted.json"`` would otherwise land INSIDE the
         skill directory (and get packaged) when --output ends with '/'.
         """
-        raw = config.get("output_dir") or f"output/{name}"
-        return str(raw).rstrip("/").rstrip("\\") or raw
+        raw = str(config.get("output_dir") or f"output/{name}")
+        stripped = raw.rstrip("/").rstrip("\\")
+        if not stripped:
+            return raw  # "/" or "\\" alone: keep the root as given
+        # A bare drive ("C:\\" or "C:/") is a root, not a drive-relative path. Keep one separator
+        # so os.path.join("C:\\", "SKILL.md") names C:\SKILL.md, not the cwd of drive C:.
+        if len(stripped) == 2 and stripped[1] == ":" and stripped[0].isalpha() and raw != stripped:
+            return stripped + raw[len(stripped)]
+        return stripped
 
     def data_file_for(self, suffix: str = "_extracted.json") -> str:
         """Path for intermediate extraction data, derived from skill_dir."""
