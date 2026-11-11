@@ -44,6 +44,36 @@ DEFAULT_MAX_PAGES = DEFAULTS["scraping"]["max_pages"]
 RATE_LIMIT_DELAY = 0.35  # seconds between Notion API requests
 MAX_BLOCK_DEPTH = 5
 
+# A 429 is retried after NOTION_429_SLEEP seconds. Consecutive 429s are capped by count and by
+# total wait, so a sustained rate limit ends the call instead of looping (or recursing) forever.
+NOTION_429_SLEEP = 10  # seconds to wait after one 429
+NOTION_429_MAX_RETRIES = 5  # consecutive 429 retries before the call is given up
+NOTION_429_MAX_WAIT = 120  # total seconds spent waiting on consecutive 429s
+
+
+class _Notion429Budget:
+    """Bounded retry state for consecutive Notion 429 responses, shared by one scraper."""
+
+    def __init__(self) -> None:
+        self._retries = 0
+        self._waited = 0.0
+
+    def wait_for_retry(self) -> bool:
+        """Sleep once and return True if another retry is allowed; False means give up."""
+        if self._retries >= NOTION_429_MAX_RETRIES:
+            return False
+        if self._waited + NOTION_429_SLEEP > NOTION_429_MAX_WAIT:
+            return False
+        self._retries += 1
+        self._waited += NOTION_429_SLEEP
+        time.sleep(NOTION_429_SLEEP)
+        return True
+
+    def succeeded(self) -> None:
+        """A request went through, so the consecutive-429 episode is over."""
+        self._retries = 0
+        self._waited = 0.0
+
 
 def _check_notion_deps() -> None:
     """Raise RuntimeError if notion-client is not installed."""
@@ -102,6 +132,7 @@ class NotionToSkillConverter(SkillConverter):
         self.extracted_data: dict[str, Any] | None = None
         self._pages_fetched: int = 0
         self._blocks_fetched: int = 0
+        self._retry_429 = _Notion429Budget()
 
     # -- Notion client ---------------------------------------------------
 
@@ -408,6 +439,7 @@ class NotionToSkillConverter(SkillConverter):
                 if cursor:
                     params["start_cursor"] = cursor
                 resp = client.databases.query(**params)
+                self._retry_429.succeeded()
                 has_more, cursor = resp.get("has_more", False), resp.get("next_cursor")
                 for entry in resp.get("results", []):
                     if self._pages_fetched >= self.max_pages:
@@ -419,8 +451,7 @@ class NotionToSkillConverter(SkillConverter):
                     time.sleep(RATE_LIMIT_DELAY)
                 logger.info("   Fetched %d entries...", self._pages_fetched)
             except APIResponseError as e:
-                if e.status == 429:
-                    time.sleep(10)
+                if e.status == 429 and self._retry_429.wait_for_retry():
                     continue  # noqa: E702
                 logger.error("Notion API error: %s", e)
                 break  # noqa: E702
@@ -548,8 +579,8 @@ class NotionToSkillConverter(SkillConverter):
                         break
                     pages.extend(self._extract_page_tree(client, child_id, current_path, depth + 1))
         except APIResponseError as e:
-            if e.status == 429:
-                time.sleep(10)
+            # Bounded: the budget allows at most NOTION_429_MAX_RETRIES consecutive retries.
+            if e.status == 429 and self._retry_429.wait_for_retry():
                 return self._extract_page_tree(client, page_id, parent_path, depth)
             logger.warning("API error on page %s: %s", page_id, e)
         except Exception as e:
@@ -590,6 +621,7 @@ class NotionToSkillConverter(SkillConverter):
                 if cursor:
                     params["start_cursor"] = cursor
                 resp = client.blocks.children.list(**params)
+                self._retry_429.succeeded()
                 has_more, cursor = resp.get("has_more", False), resp.get("next_cursor")
                 for block in resp.get("results", []):
                     self._blocks_fetched += 1
@@ -600,9 +632,13 @@ class NotionToSkillConverter(SkillConverter):
                     code_blocks.extend(bc)
                 time.sleep(RATE_LIMIT_DELAY)
             except APIResponseError as e:
-                if e.status == 429:
-                    time.sleep(10)
+                if e.status == 429 and self._retry_429.wait_for_retry():
                     continue  # noqa: E702
+                if e.status == 429:
+                    logger.warning(
+                        "Notion rate limit persisted; blocks of %s may be partial", page_id
+                    )
+                    break  # noqa: E702
                 logger.debug("API error fetching blocks for %s: %s", page_id, e)
                 break  # noqa: E702
             except Exception as e:
