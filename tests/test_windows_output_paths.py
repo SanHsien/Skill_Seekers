@@ -8,7 +8,10 @@ on every host, and they assert on files that actually land on disk.
 from __future__ import annotations
 
 import ntpath
+import os
 from pathlib import Path
+
+import pytest
 
 from skill_seekers.cli.doc_scraper import DocToSkillConverter
 
@@ -40,7 +43,12 @@ def _page(url: str, title: str) -> dict:
 
 
 def test_three_hostile_url_segments_cannot_write_outside_references(tmp_path):
-    """F1: a backslash-bearing URL segment that auto-categorizes must not escape references/."""
+    """F1: a backslash-bearing URL segment that auto-categorizes must not escape references/.
+
+    The escape assertions are substantive only on a Windows host, where the write actually
+    leaves the directory. On other hosts the name assertion still runs: ntpath.basename rejects
+    any backslash in a file name on every platform, so the sanitizer is checked everywhere.
+    """
     skill_dir = tmp_path / "skill"
     (skill_dir / "references").mkdir(parents=True)
     converter = _converter(skill_dir)
@@ -157,11 +165,44 @@ def test_llms_write_refuses_a_name_that_leaves_references(tmp_path, monkeypatch)
     }
     converter = DocToSkillConverter(config, dry_run=True)
     (skill_dir / "references").mkdir(parents=True)
-    try:
+    with pytest.raises(ValueError, match="resolves outside references|Unsafe reference"):
         converter._try_llms_txt()
-    except ValueError:
-        pass
     assert not (tmp_path.parent / "escaped_llms.md").exists()
     assert not (tmp_path / "escaped_llms.md").exists()
     assert not (skill_dir / "escaped_llms.md").exists()
     assert list((skill_dir / "references").iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "CON",
+        "con.md",
+        "PRN.txt",
+        "aux",
+        "NUL.md",
+        "COM1.md",
+        "lpt9",
+        "COM¹.md",
+        "LPT³",
+        "COM².txt",
+        "a‮b.md",
+        "x⁦y.md",
+    ],
+)
+def test_resolve_reference_path_refuses_reserved_and_bidi_names(tmp_path, name):
+    """Hardening (review): Windows device names, with any case, extension or superscript digit,
+    and bidi override characters must never become a reference file name."""
+    from skill_seekers.cli.doc_scraper import resolve_reference_path
+
+    with pytest.raises(ValueError):
+        resolve_reference_path(str(tmp_path), name)
+
+
+def test_resolve_reference_path_keeps_ordinary_names(tmp_path):
+    """Regression guard: names that only look like device names still resolve inside the root."""
+    from skill_seekers.cli.doc_scraper import resolve_reference_path
+
+    for name in ("CONSOLE.md", "com10.md", "api-reference.md"):
+        resolved = resolve_reference_path(str(tmp_path), name)
+        assert os.path.dirname(os.path.realpath(resolved)) == os.path.realpath(str(tmp_path))

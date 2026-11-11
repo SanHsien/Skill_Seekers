@@ -84,12 +84,20 @@ _DISPLAY_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]+")
 
 # Category names can come from untrusted URL segments. Path separators, drive/stream markers
 # and control characters are replaced before a category becomes a file name.
-_UNSAFE_FILENAME_CHARS_RE = re.compile(r'[\x00-\x1f\\/:*?"<>|]')
+_UNSAFE_FILENAME_CHARS_RE = re.compile(r'[\x00-\x1f\\/:*?"<>|‪-‮⁦-⁩]')
 _WINDOWS_RESERVED_STEMS = frozenset(
     {"con", "prn", "aux", "nul"}
     | {f"com{n}" for n in range(1, 10)}
     | {f"lpt{n}" for n in range(1, 10)}
 )
+# Windows also treats the superscript digits as COM/LPT numbers (COM¹ is COM1).
+_DEVICE_DIGITS = str.maketrans({"¹": "1", "²": "2", "³": "3"})
+
+
+def _is_windows_reserved(name: str) -> bool:
+    """True when the base name (before the first dot) is a Windows device name, in any case."""
+    base = name.split(".")[0].strip(" ").translate(_DEVICE_DIGITS).lower()
+    return base in _WINDOWS_RESERVED_STEMS
 
 
 def reference_file_stem(category: str) -> str:
@@ -97,7 +105,7 @@ def reference_file_stem(category: str) -> str:
     stem = _UNSAFE_FILENAME_CHARS_RE.sub("_", str(category)).strip(" .")
     if not stem:
         stem = "category"
-    if stem.split(".")[0].lower() in _WINDOWS_RESERVED_STEMS:
+    if _is_windows_reserved(stem):
         stem = f"_{stem}"
     return stem
 
@@ -125,7 +133,13 @@ def resolve_reference_path(refs_dir: str, filename: str) -> str:
     base name; the resolved target must still sit directly in refs_dir, which also catches a
     pre-existing symlink or junction that carries the same name.
     """
-    if not filename or filename in (".", "..") or re.search(r"[\\/:\x00]", filename):
+    if (
+        not filename
+        or filename in (".", "..")
+        or re.search(r"[\\/:\x00]", filename)
+        or _UNSAFE_FILENAME_CHARS_RE.search(filename)
+        or _is_windows_reserved(filename)
+    ):
         raise ValueError(f"Unsafe reference file name {filename!r}")
     filepath = os.path.join(refs_dir, filename)
     if os.path.dirname(os.path.realpath(filepath)) != os.path.realpath(refs_dir):
