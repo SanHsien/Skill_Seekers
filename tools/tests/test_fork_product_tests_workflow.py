@@ -20,6 +20,7 @@ REQUIRED_PORTED_TESTS = (
     "tests/test_windows_output_paths.py",
     "tests/test_source_text_embedding.py",
     "tests/test_notion_rate_limit.py",
+    "tests/test_unc_output_root.py",
 )
 
 

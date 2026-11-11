@@ -22,6 +22,7 @@ tests/test_source_text_embedding.py
 tests/test_sync_config.py
 tests/test_sync_config_e2e.py
 tests/test_sync_detector.py
+tests/test_unc_output_root.py
 tests/test_video_scraper.py
 tests/test_vtt_numeric_cue.py
 tests/test_windows_output_paths.py
