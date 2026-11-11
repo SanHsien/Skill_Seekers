@@ -366,3 +366,30 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **家目錄隔離（追加）**：獨立審查實跑時，清單內測試會寫 `.cache/skill-seekers/embeddings/embeddings.db`、`.config/miopen` 到家目錄；本機用同指令重跑也曾寫壞真實的 `~/.claude/skills/demo`。job 因此把 `HOME`、`USERPROFILE` 指到 `runner.temp` 下的 `home` 並先建立；主 `uv run` 明寫 `--python 3.12`；清單讀取先 `Trim()` 再略過空行與 `#`，與 `_listed_tests()` 一致。本機重跑請同樣把兩個變數指到暫存目錄。
 
 **`pytest.ci.ini` 的說明**：它是上游檔，沒有被任何 workflow 引用，本 fork 不改。它 collect 0 個測試的正確原因是 ini 格式不認 TOML 清單語法：`testpaths = ["tests"]` 被當成字面字串 `["tests"]`（同理 `python_files`、`python_classes`），所以找不到路徑，與測試本身無關。
+
+
+## 2026-11-12：唯讀覆核 F1–F7 修補（fork 修補登記）
+
+**決定**：依唯讀品質覆核（固定 HEAD `1ec4ec1`）逐項修補。核對 `upstream/main`（`d26c2e3`）與 `upstream/development`：兩者的 `doc_scraper.py`、`llms_txt_downloader.py`、`skill_converter.py`、`notion_scraper.py`、`enhancement_workflow.py` 皆未含這些修補，故全部登記為 fork 修補，**不回貢**（回貢需維護者在當次對話明確同意）。
+
+| 嚴重度 | 項目 | 修補 commit | 紅燈測試（先失敗） |
+| --- | --- | --- | --- |
+| 高 | F1 URL 分類在 Windows 穿越 references/ | `49c6c56` | `test_three_hostile_url_segments_cannot_write_outside_references`：檔案寫到輸出目錄的上一層 |
+| 高 | F3 來源指示進入 SKILL.md 正文、圍欄被提前關閉 | `fe3560c` | `test_source_instructions_stay_inside_fenced_data_blocks`、`test_code_fence_breakout_in_source_cannot_close_the_block_early`、`test_source_provenance_is_recorded_next_to_copied_text`、`test_frontmatter_description_cannot_inject_keys_or_lines` |
+| 中 | F2 自訂 llms_txt_url 檔名含反斜線 | `d7857db` | `test_llms_txt_url_filename_cannot_carry_windows_traversal` |
+| 中 | F5 Windows 根磁碟 `--output` 被裁成 drive-relative | `4bd080a` | `test_drive_root_output_keeps_its_root_anchor` |
+| 中 | F4 Notion 429 重試無上限 | `119850c` | `test_persistent_429_gives_up_after_bounded_retries`（另有總等待與恢復案例） |
+| 中 | F6 Windows 回歸測試未涵蓋資料流 | `91561ae` | 把新測試列入 `tools/fork_product_tests.txt`，並加入 `REQUIRED_PORTED_TESTS` |
+| 低 | F7 提示詞代換破壞 str.format 語法 | `b46c6cf` | `test_custom_prompt_keeps_str_format_escapes_conversions_and_specs` |
+
+**驗證**：fork 產品測試清單（26 檔，`-m "not integration and not e2e and not network and not slow"`，HOME/USERPROFILE 指暫存）：761 passed、7 skipped、25 deselected。`tools\dev_check.ps1` exit 0，結尾 `WINDOWS DEV CHECK GREEN`。`git diff --check` 無輸出。
+
+**未完成／限制**：
+
+- F3 只處理 SKILL.md 的模式、範例與 frontmatter。`create_enhanced_skill_md` 仍把推斷出的 description 當正文，`references/*.md` 的頁面內文也仍是未圍欄的來源文字。這兩處未改。
+- F1 的寫入點檢查只在 `create_reference_file`。F2 只靠檔名清理，寫入點沒有另加 containment。
+- F4 固定每次 429 等 10 秒，不讀 `Retry-After`。
+- F5 只處理單一磁碟字母根，UNC 根未擴充。
+- F7 的 fallback 路徑（模板含 JSON 等無效 format 語法時）不套用 `:spec`，維持 c709c93 的既有行為。
+- 同一批次的 `tools/check_upstream_updates.py --strict` 紅燈，原因是上游有待分流項目（PR #484、#486，issue #485），**沒有新 commit**。依任務指示只回報，未在本輪處理。
+- `tests/test_sentence_transformers_security.py` 仍因未安裝 `sentence_transformers` 而 skip（既有狀態）。
