@@ -78,3 +78,34 @@ def test_reference_file_stem_keeps_ordinary_names_and_drops_separators():
         stem = reference_file_stem(hostile)
         assert BACKSLASH not in stem and "/" not in stem and ":" not in stem
         assert ntpath.basename(stem) == stem
+
+
+def test_llms_txt_url_filename_cannot_carry_windows_traversal():
+    """F2: a configured llms_txt_url whose last segment uses backslashes or drive prefixes
+    must still produce one file name that the references/ join cannot climb out of."""
+    from skill_seekers.cli.llms_txt_downloader import LlmsTxtDownloader
+
+    hostile = "https://docs.invalid/" + BACKSLASH.join(["..", "..", "..", "escaped_llms.txt"])
+    name = LlmsTxtDownloader(hostile).get_proper_filename()
+    assert name == "escaped_llms.md"
+
+    for url, expected in (
+        ("https://docs.invalid/C:evil.txt", "C_evil.md"),
+        ("https://docs.invalid/x" + BACKSLASH + "y.txt", "y.md"),
+        ("https://docs.invalid/", "llms.md"),
+        ("https://docs.invalid/..", "llms.md"),
+    ):
+        name = LlmsTxtDownloader(url).get_proper_filename()
+        assert name == expected, url
+        assert BACKSLASH not in name and ":" not in name and "/" not in name
+        assert ntpath.basename(name) == name
+
+
+def test_llms_txt_downloader_filename_for_existing_urls_is_unchanged():
+    """Regression guard for the F2 fix: ordinary llms file names keep their current mapping."""
+    from skill_seekers.cli.llms_txt_downloader import LlmsTxtDownloader
+
+    assert LlmsTxtDownloader("https://hono.dev/llms-full.txt").get_proper_filename() == (
+        "llms-full.md"
+    )
+    assert LlmsTxtDownloader("https://hono.dev/llms.txt").get_proper_filename() == "llms.md"

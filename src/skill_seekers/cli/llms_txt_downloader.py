@@ -1,8 +1,11 @@
 """ABOUTME: Downloads llms.txt files from documentation URLs with retry logic"""
 
+import re
 import time
 
 import requests
+
+_UNSAFE_NAME_CHARS_RE = re.compile(r'[\x00-\x1f:*?"<>|]')
 
 
 class LlmsTxtDownloader:
@@ -29,7 +32,14 @@ class LlmsTxtDownloader:
         from urllib.parse import urlparse
 
         parsed = urlparse(self.url)
-        filename = parsed.path.split("/")[-1]
+        # Split on both separators: Windows treats "\" as a separator when the file is written,
+        # so a URL segment such as "..\..\x.txt" must not survive as a file name.
+        filename = re.split(r"[\\/]", parsed.path)[-1]
+        # Drop characters that are never valid in a portable file name, and dots/spaces at
+        # either end (".." would otherwise name a directory).
+        filename = _UNSAFE_NAME_CHARS_RE.sub("_", filename).strip(" .")
+        if not filename:
+            filename = "llms.txt"
 
         # Replace .txt with .md
         if filename.endswith(".txt"):
