@@ -2,11 +2,11 @@
   "repo": "https://github.com/yusufkaraaslan/Skill_Seekers.git",
   "branch": "main",
   "reviewed_through": "d26c2e3e0384c664a6fcc71ca10ddcd26026ac0b",
-  "reviewed_date": "2026-11-10",
-  "reviewed_pr_through": 483,
-  "reviewed_issue_through": 481,
+  "reviewed_date": "2026-11-12",
+  "reviewed_pr_through": 486,
+  "reviewed_issue_through": 485,
   "decision_log": "docs/DECISIONS.md",
-  "notes": "Fork 起點為上游 main c333a37（v3.9.1）。2026-10-24 已整批採用至 d26c2e3（v3.10.0），詳見 docs/DECISIONS.md 同日條目。 2026-11-02：PR #478–#479、issue #480 逐筆審查；採用 #478 與 #480，#479 條件式釘在 monitored，理由見 docs/DECISIONS.md 同日條目。 2026-11-10：PR #482–#483、issue #481 逐筆審查；移植 #482 的 preview 與寬鬆代換、採用 #481，#482／#483 的其餘部分條件式釘在 monitored，理由見 docs/DECISIONS.md 同日條目。",
+  "notes": "Fork 起點為上游 main c333a37（v3.9.1）。2026-10-24 已整批採用至 d26c2e3（v3.10.0），詳見 docs/DECISIONS.md 同日條目。 2026-11-02：PR #478–#479、issue #480 逐筆審查；採用 #478 與 #480，#479 條件式釘在 monitored，理由見 docs/DECISIONS.md 同日條目。 2026-11-10：PR #482–#483、issue #481 逐筆審查；移植 #482 的 preview 與寬鬆代換、採用 #481，#482／#483 的其餘部分條件式釘在 monitored，理由見 docs/DECISIONS.md 同日條目。 2026-11-12：PR #484、#486、issue #485 逐筆審查，三項皆延後；PR #484、#486 條件式釘在 monitored，理由見 docs/DECISIONS.md 同日條目。",
   "monitored": [
     {
       "item": "pr#479",
@@ -21,6 +21,16 @@
     {
       "item": "pr#483",
       "head": "ebed7f519dffc173c2a25449c8fa173df6c30963",
+      "state": "open"
+    },
+    {
+      "item": "pr#484",
+      "head": "2f3517267020fd1315fc57193d9f7d4f5f811669",
+      "state": "open"
+    },
+    {
+      "item": "pr#486",
+      "head": "d5a60882a8e27fbf87f3313fe32417c8c3b8e103",
       "state": "open"
     }
   ]

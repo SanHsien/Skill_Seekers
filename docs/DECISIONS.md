@@ -391,5 +391,19 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 - F4 固定每次 429 等 10 秒，不讀 `Retry-After`。
 - F5 只處理單一磁碟字母根，UNC 根未擴充。
 - F7 的 fallback 路徑（模板含 JSON 等無效 format 語法時）不套用 `:spec`，維持 c709c93 的既有行為。
-- 同一批次的 `tools/check_upstream_updates.py --strict` 紅燈，原因是上游有待分流項目（PR #484、#486，issue #485），**沒有新 commit**。依任務指示只回報，未在本輪處理。
+- 同一批次的 `tools/check_upstream_updates.py --strict` 紅燈，原因是上游有待分流項目（PR #484、#486，issue #485），**沒有新 commit**。依任務指示只回報，其後由 2026-11-12 的上游審查處理（見下方同日條目）。
 - `tests/test_sentence_transformers_security.py` 仍因未安裝 `sentence_transformers` 而 skip（既有狀態）。
+
+## 2026-11-12：上游 PR #484、#486 與 issue #485（三項延後）
+
+三個項目都讀過內容：PR #484 與 #486 用 `gh pr diff` 取得 diff（唯讀），issue #485 讀 body。掃描隱藏內容的結果：兩份 diff 的不可見或格式字元（Unicode Cf、Co、控制字元）皆為 0；上游 comments 與 reviews 皆為空。commit 軸無新增（仍是 `d26c2e3`）。
+
+| 項目 | 狀態與 head | 裁決 | 證據與理由 |
+| --- | --- | --- | --- |
+| PR #484（PDF 程式碼偵測：不把文件片段標成 sass／typescript） | open，`2f35172`，+231／-35，3 檔（2 修改、1 新增測試） | **延後（條件式，釘 monitored）** | 缺陷屬實，修法有測試。這次無法在本機套用上游 diff，權限系統拒絕了 `git apply` 這個動作，因此沒有做先紅後綠的移植。另一個理由：sass 規則改為行首錨點，會改變語言偵測的全域行為，需要獨立的移植批次審查。觸發重看：移植批次開始；或 head 不再是 `2f35172`、狀態離開 open（`monitored` 會報）。 |
+| PR #486（install-agent 安裝目錄名改用 SKILL.md frontmatter 的 name） | open，`d5a6088`，+73／-1，2 檔 | **延後（條件式，釘 monitored）** | 缺陷描述可信（打包時的 `-opencode` 後綴與目錄名要求不一致）。同樣因為權限拒絕，這次未套用 diff，未移植。觸發重看：移植批次開始；或 head 不再是 `d5a6088`、狀態離開 open。 |
+| issue #485（PDF 字型路徑缺結構驗證、品質分數膨脹、未使用 TOC） | open，無留言、無對應 PR | **延後（不釘 monitored，監看 #484）** | 三項中第一、二項需要設計門檻（code 形狀、分數規則），不是單點修正；第三項是功能缺口。#484 合併後若真實案例仍有片段被當成程式碼，再另開設計。 |
+
+水位：`reviewed_pr_through` 483 → 486，`reviewed_issue_through` 481 → 485（對應 `tools/upstream_baseline.json`）。`monitored` 新增 `pr#484`、`pr#486`。`reviewed_through`（commit 軸）未變。
+
+**限制**：三項皆未移植，fork 的 PDF 與 install-agent 行為與上游一致、仍含上述缺陷。若維護者要求移植，應在另一批次先紅後綠處理，並在該批次記錄新的 head。
