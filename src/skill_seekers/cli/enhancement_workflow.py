@@ -409,14 +409,21 @@ class WorkflowEngine:
 
             self.enhancer = AIEnhancer(agent=self.agent)
 
-        # Tolerant substitution: only well-formed simple fields ({var}) found in
-        # the context are replaced. Literal JSON braces and unknown fields stay
-        # untouched (str.format() raised on them and dropped all substitution).
-        def _substitute(match: "re.Match[str]") -> str:
-            key = match.group(1)
-            return str(context[key]) if key in context else match.group(0)
+        # Templates that are valid str.format() strings keep their existing meaning: {{ }}
+        # escapes, !r conversions and :spec formats. Templates that str.format() rejects
+        # (typically literal JSON examples, or unknown fields) fall back to tolerant
+        # substitution: only well-formed simple fields found in the context are replaced,
+        # and everything else stays untouched. Before this split, the tolerant pass ran on
+        # every template and turned "{{skill_dir}}" into a substituted value.
+        try:
+            formatted_prompt = stage.prompt.format(**context)
+        except (KeyError, IndexError, ValueError, AttributeError, TypeError):
 
-        formatted_prompt = re.sub(r"\{([a-zA-Z_]\w*)\}", _substitute, stage.prompt)
+            def _substitute(match: "re.Match[str]") -> str:
+                key = match.group(1)
+                return str(context[key]) if key in context else match.group(0)
+
+            formatted_prompt = re.sub(r"\{([a-zA-Z_]\w*)\}", _substitute, stage.prompt)
 
         # Call AI with custom prompt
         logger.info(f"   🤖 Running custom AI prompt...")

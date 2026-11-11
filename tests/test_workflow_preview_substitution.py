@@ -48,3 +48,20 @@ def test_custom_prompt_keeps_literal_json_braces_and_substitutes_context():
     assert "Dir out/x." in sent
     assert '{"findings": []}' in sent
     assert "{unknown}" in sent
+
+
+def test_custom_prompt_keeps_str_format_escapes_conversions_and_specs():
+    """F7: prompts written for str.format keep {{ }} escapes, !r conversions and :spec formats.
+
+    The tolerant pass that handles literal JSON must not replace an escaped {{skill_dir}}
+    with the context value, and must not leave !r or :04d unapplied.
+    """
+    engine = _engine(_custom_stage("Literal {{skill_dir}}; name={name!r}; n={count:04d}"))
+    engine.enhancer = MagicMock()
+    engine.enhancer.call.return_value = "{}"
+    engine._run_custom_stage(
+        engine.workflow.stages[0],
+        {"skill_dir": "out/x", "name": "demo", "count": 7},
+    )
+    sent = engine.enhancer.call.call_args[0][0]
+    assert sent == "Literal {skill_dir}; name='demo'; n=0007"
