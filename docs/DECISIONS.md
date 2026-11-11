@@ -382,16 +382,19 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 | 中 | F6 Windows 回歸測試未涵蓋資料流 | `91561ae` | 把新測試列入 `tools/fork_product_tests.txt`，並加入 `REQUIRED_PORTED_TESTS` |
 | 低 | F7 提示詞代換破壞 str.format 語法 | `b46c6cf` | `test_custom_prompt_keeps_str_format_escapes_conversions_and_specs` |
 
-**驗證**：fork 產品測試清單（26 檔，`-m "not integration and not e2e and not network and not slow"`，HOME/USERPROFILE 指暫存）：761 passed、7 skipped、25 deselected。`tools\dev_check.ps1` exit 0，結尾 `WINDOWS DEV CHECK GREEN`。`git diff --check` 無輸出。
+**驗證（2026-11-12 最終，`eab3af7` 之後）**：指令為 `python -m pytest <tools/fork_product_tests.txt 內的檔案> -m "not integration and not e2e and not network and not slow" -q`，HOME／USERPROFILE 指向暫存目錄，PYTHONUTF8=1。結果：780 passed、7 skipped、25 deselected、0 failed。`tools\dev_check.ps1` exit 0，結尾 `WINDOWS DEV CHECK GREEN`；`--strict` exit 0；`git diff --check` 無輸出。
 
-**未完成／限制**：
+**獨立審查的不同結果**：審查者以同一清單全跑（未套用上述 marker）得 789 passed、8 skipped、2 failed，兩個失敗皆在 `tests/test_real_world_fastmcp.py`，審查者判定 1ec4ec1 基底即失敗，原因為 cp950 編碼與品質分數既有問題。本機以上述 UTF-8 環境單獨執行該檔：5 passed、1 skipped；以 marker 執行則全數 deselected。本次未重現那兩個失敗，兩份數字的差異來自執行環境與 marker，未另行證實。
 
-- F3 只處理 SKILL.md 的模式、範例與 frontmatter。`create_enhanced_skill_md` 仍把推斷出的 description 當正文，`references/*.md` 的頁面內文也仍是未圍欄的來源文字。這兩處未改。
-- F1 的寫入點檢查只在 `create_reference_file`。F2 只靠檔名清理，寫入點沒有另加 containment。
-- F4 固定每次 429 等 10 秒，不讀 `Retry-After`。
-- F5 只處理單一磁碟字母根，UNC 根未擴充。
-- F7 的 fallback 路徑（模板含 JSON 等無效 format 語法時）不套用 `:spec`，維持 c709c93 的既有行為。
-- 同一批次的 `tools/check_upstream_updates.py --strict` 紅燈，原因是上游有待分流項目（PR #484、#486，issue #485），**沒有新 commit**。依任務指示只回報，其後由 2026-11-12 的上游審查處理（見下方同日條目）。
+**現況（取代先前「未完成／限制」列表）**：
+
+- F1：寫入點檢查由 `resolve_reference_path()` 統一處理（`49c6c56`、`4a0d827`）。
+- F2：llms 三個寫入點改走 `resolve_reference_path()`，有 realpath containment（`4a0d827`）；檔名另由 downloader 清理（`d7857db`）；Windows 裝置名與雙向控制字元在 `eab3af7` 拒絕。
+- F3：SKILL.md 的模式、範例與 frontmatter 以動態圍欄（`fe3560c`）；`references/*.md` 的頁面內文圍欄並標示為來源資料，標題、URL、heading 壓成單行（`4a0d827`）；推斷的 description 壓成單行，含 Markdown 語法時圍欄（`4a0d827`）。
+- F4：固定 10 秒改為讀 `Retry-After`，仍受總等待上限約束（`8d40acd`）。
+- F5：單一磁碟字母根（`4bd080a`）與 UNC 共享根（`a9108e2`）皆保留根錨點。
+- F7：`:spec` 等效果只在 `str.format` 可解析的模板生效；無效模板的 fallback 仍不套用 `:spec`，維持 c709c93 的既有行為（`b46c6cf`）。
+- 上游 `--strict` 紅燈已於同日的上游分流處理（見下方同日條目）。
 - `tests/test_sentence_transformers_security.py` 仍因未安裝 `sentence_transformers` 而 skip（既有狀態）。
 
 ## 2026-11-12：上游 PR #484、#486 與 issue #485（三項延後）
