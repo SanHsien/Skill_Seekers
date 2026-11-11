@@ -82,6 +82,26 @@ _SAFE_TITLE_RE = re.compile(r"[^\w\s-]")
 _SAFE_TITLE_SEP_RE = re.compile(r"[-\s]+")
 _DISPLAY_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]+")
 
+# Category names can come from untrusted URL segments. Path separators, drive/stream markers
+# and control characters are replaced before a category becomes a file name.
+_UNSAFE_FILENAME_CHARS_RE = re.compile(r'[\x00-\x1f\\/:*?"<>|]')
+_WINDOWS_RESERVED_STEMS = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{n}" for n in range(1, 10)}
+    | {f"lpt{n}" for n in range(1, 10)}
+)
+
+
+def reference_file_stem(category: str) -> str:
+    """Return one portable file-name stem for a category: no separators, no reserved names."""
+    stem = _UNSAFE_FILENAME_CHARS_RE.sub("_", str(category)).strip(" .")
+    if not stem:
+        stem = "category"
+    if stem.split(".")[0].lower() in _WINDOWS_RESERVED_STEMS:
+        stem = f"_{stem}"
+    return stem
+
+
 # Tracking / analytics query params that don't change page content. Stripping
 # them before dedup stops the same page being crawled once per tracking variant
 # (a crawler trap), while preserving content-distinguishing params like ?lang=.
@@ -2071,7 +2091,14 @@ class DocToSkillConverter(SkillConverter):
 
             lines.append("---\n")
 
-        filepath = os.path.join(self.skill_dir, "references", f"{category}.md")
+        refs_dir = os.path.join(self.skill_dir, "references")
+        filepath = os.path.join(refs_dir, f"{reference_file_stem(category)}.md")
+        # Defense in depth: the resolved target must stay a direct child of references/
+        # (catches a pre-existing symlink or junction that carries the category's name).
+        if os.path.dirname(os.path.realpath(filepath)) != os.path.realpath(refs_dir):
+            raise ValueError(
+                f"Reference file for category {category!r} resolves outside references/"
+            )
         with open(filepath, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
@@ -2200,7 +2227,7 @@ This skill includes comprehensive documentation in `references/`:
 """
 
         for cat in sorted(categories.keys()):
-            content += f"- **{cat}.md** - {cat.replace('_', ' ').title()} documentation\n"
+            content += f"- **{reference_file_stem(cat)}.md** - {cat.replace('_', ' ').title()} documentation\n"
 
         content += """
 Use `view` to read specific reference files when detailed information is needed.
@@ -2244,7 +2271,7 @@ To refresh this skill with updated documentation:
 
         for cat, pages in sorted(categories.items()):
             lines.append(f"### {cat.replace('_', ' ').title()}")
-            lines.append(f"**File:** `{cat}.md`")
+            lines.append(f"**File:** `{reference_file_stem(cat)}.md`")
             lines.append(f"**Pages:** {len(pages)}\n")
 
         filepath = os.path.join(self.skill_dir, "references", "index.md")
