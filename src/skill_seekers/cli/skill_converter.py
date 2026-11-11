@@ -11,6 +11,7 @@ Usage:
 
 import logging
 import os
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,9 @@ class SkillConverter:
         # A bare drive ("C:\\" or "C:/") is a root, not a drive-relative path. Keep one separator
         # so os.path.join("C:\\", "SKILL.md") names C:\SKILL.md, not the cwd of drive C:.
         if len(stripped) == 2 and stripped[1] == ":" and stripped[0].isalpha() and raw != stripped:
+            return stripped + raw[len(stripped)]
+        # A UNC share root (\\server\share) is a root too: keep the separator the caller gave.
+        if re.fullmatch(r"[\\/]{2}[^\\/]+[\\/]+[^\\/]+", stripped) and raw != stripped:
             return stripped + raw[len(stripped)]
         return stripped
 
