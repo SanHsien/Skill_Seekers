@@ -127,3 +127,41 @@ def test_drive_root_output_keeps_its_root_anchor():
     assert ntpath.join(resolve({"output_dir": "C:" + BACKSLASH}, "n"), "SKILL.md") == (
         "C:" + BACKSLASH + "SKILL.md"
     )
+
+
+def test_llms_write_refuses_a_name_that_leaves_references(tmp_path, monkeypatch):
+    """F2 containment: even if a downloader hands back a traversal name, the explicit llms write
+    must refuse it instead of writing outside references/ (the sanitizer is not the only guard)."""
+    from skill_seekers.cli import doc_scraper
+
+    class _FakeDownloader:
+        def __init__(self, url, *a, **k):
+            self.url = url
+
+        def download(self):
+            return "# llms content\n"
+
+        def get_proper_filename(self):
+            return HOSTILE_SEGMENT.replace("escaped_category", "escaped_llms") + ".md"
+
+    monkeypatch.setattr(doc_scraper, "LlmsTxtDownloader", _FakeDownloader)
+    skill_dir = tmp_path / "skill"
+    config = {
+        "name": "winpaths",
+        "base_url": "https://docs.invalid/",
+        "output_dir": str(skill_dir),
+        "llms_txt_url": "https://docs.invalid/llms.txt",
+        "selectors": {"main_content": "article", "title": "h1", "code_blocks": "pre code"},
+        "rate_limit": 0.0,
+        "max_pages": 10,
+    }
+    converter = DocToSkillConverter(config, dry_run=True)
+    (skill_dir / "references").mkdir(parents=True)
+    try:
+        converter._try_llms_txt()
+    except ValueError:
+        pass
+    assert not (tmp_path.parent / "escaped_llms.md").exists()
+    assert not (tmp_path / "escaped_llms.md").exists()
+    assert not (skill_dir / "escaped_llms.md").exists()
+    assert list((skill_dir / "references").iterdir()) == []

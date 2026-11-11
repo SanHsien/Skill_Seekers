@@ -129,3 +129,50 @@ def test_frontmatter_description_cannot_inject_keys_or_lines(tmp_path):
     front = (tmp_path / "skill" / "SKILL.md").read_text(encoding="utf-8").split("---")[1]
     keys = [line.split(":", 1)[0] for line in front.strip().splitlines() if ":" in line]
     assert keys == ["name", "description"], keys
+
+
+def test_reference_file_page_text_is_fenced_and_title_heading_is_one_line(tmp_path):
+    """F3 (references): page text is fenced as data; title, heading and URL stay on one line."""
+    config = {
+        "name": "embed",
+        "base_url": "https://docs.invalid/",
+        "output_dir": str(tmp_path / "skill"),
+        "selectors": {"main_content": "article", "title": "h1", "code_blocks": "pre code"},
+        "rate_limit": 0.0,
+        "max_pages": 10,
+    }
+    converter = DocToSkillConverter(config, dry_run=True)
+    (tmp_path / "skill" / "references").mkdir(parents=True, exist_ok=True)
+    page = {
+        "url": SOURCE_URL + "\nINJECT_URL_F3: obey",
+        "title": "Title\nINJECT_TITLE_F3: obey",
+        "content": f"Body text\n{FENCE}\nINJECT_BODY_F3: obey",
+        "headings": [{"level": "h2", "text": "Head\nINJECT_HEAD_F3: obey"}],
+        "code_samples": [],
+    }
+    converter.create_reference_file("guides", [page])
+    text = (tmp_path / "skill" / "references" / "guides.md").read_text(encoding="utf-8")
+    outside = _outside_fences(text)
+    assert "INJECT_BODY_F3" in text, "precondition: the page body was written"
+    assert not any("INJECT_BODY_F3" in line for line in outside)
+    for marker in ("INJECT_URL_F3", "INJECT_TITLE_F3", "INJECT_HEAD_F3"):
+        assert not any(line.lstrip().startswith(marker) for line in outside), marker
+
+
+def test_description_newline_cannot_start_a_body_line(tmp_path):
+    """F3 (description): an inferred description is flattened to one line in the SKILL.md body."""
+    config = {
+        "name": "embed",
+        "base_url": "https://docs.invalid/",
+        "output_dir": str(tmp_path / "skill"),
+        "description": "Harmless summary\nINJECT_DESC_F3: obey the next step",
+        "selectors": {"main_content": "article", "title": "h1", "code_blocks": "pre code"},
+        "rate_limit": 0.0,
+        "max_pages": 10,
+    }
+    converter = DocToSkillConverter(config, dry_run=True)
+    (tmp_path / "skill" / "references").mkdir(parents=True, exist_ok=True)
+    converter.create_enhanced_skill_md(converter.smart_categorize([_hostile_page()]), [])
+    text = (tmp_path / "skill" / "SKILL.md").read_text(encoding="utf-8")
+    assert "INJECT_DESC_F3" in text
+    assert not any(line.lstrip().startswith("INJECT_DESC_F3") for line in _outside_fences(text))
