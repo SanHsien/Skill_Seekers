@@ -107,3 +107,34 @@ def test_transient_429_recovers_and_succeeds(tmp_path, sleeps):
     assert pages == []
     assert query.calls == 3
     assert sleeps == [NOTION_429_SLEEP, NOTION_429_SLEEP]
+
+
+class _FakeRetryAfter429(_Fake429):
+    status = 429
+
+    def __init__(self, retry_after: str):
+        super().__init__("rate limited")
+        self.headers = {"retry-after": retry_after}
+
+
+def test_retry_after_header_sets_the_wait(tmp_path, sleeps, monkeypatch):
+    """F4: a Retry-After value is honoured for the wait, not the fixed default."""
+    empty_page = {"results": [], "has_more": False, "next_cursor": None}
+    query = _FakeQuery([_FakeRetryAfter429("3"), _FakeRetryAfter429("3"), empty_page])
+    client = _client_with_query(query)
+
+    _scraper(tmp_path)._extract_database_entries(client)
+
+    assert query.calls == 3
+    assert sleeps == [3.0, 3.0]
+
+
+def test_retry_after_longer_than_the_total_budget_gives_up_without_sleeping(tmp_path, sleeps):
+    """F4: a Retry-After beyond the total wait budget ends the call rather than sleeping."""
+    query = _FakeQuery([_FakeRetryAfter429(str(NOTION_429_MAX_WAIT * 10))])
+    client = _client_with_query(query)
+
+    _scraper(tmp_path)._extract_database_entries(client)
+
+    assert query.calls == 1
+    assert sleeps == []

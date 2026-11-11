@@ -51,6 +51,19 @@ NOTION_429_MAX_RETRIES = 5  # consecutive 429 retries before the call is given u
 NOTION_429_MAX_WAIT = 120  # total seconds spent waiting on consecutive 429s
 
 
+def _retry_after_seconds(error: Any) -> float | None:
+    """Return the Retry-After delay of a 429 in seconds, or None when absent or unusable."""
+    headers = getattr(error, "headers", None)
+    if not headers:
+        return None
+    try:
+        value = headers.get("retry-after")
+        seconds = float(value) if value is not None else None
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return seconds if seconds is not None and seconds >= 0 else None
+
+
 class _Notion429Budget:
     """Bounded retry state for consecutive Notion 429 responses, shared by one scraper."""
 
@@ -58,15 +71,21 @@ class _Notion429Budget:
         self._retries = 0
         self._waited = 0.0
 
-    def wait_for_retry(self) -> bool:
-        """Sleep once and return True if another retry is allowed; False means give up."""
+    def wait_for_retry(self, retry_after: float | None = None) -> bool:
+        """Sleep once and return True if another retry is allowed; False means give up.
+
+        ``retry_after`` (seconds, from the 429 response) replaces the fixed wait when given.
+        The total-wait budget applies to whichever delay is used, so a long Retry-After ends
+        the call instead of sleeping past the cap.
+        """
+        delay = NOTION_429_SLEEP if retry_after is None else retry_after
         if self._retries >= NOTION_429_MAX_RETRIES:
             return False
-        if self._waited + NOTION_429_SLEEP > NOTION_429_MAX_WAIT:
+        if self._waited + delay > NOTION_429_MAX_WAIT:
             return False
         self._retries += 1
-        self._waited += NOTION_429_SLEEP
-        time.sleep(NOTION_429_SLEEP)
+        self._waited += delay
+        time.sleep(delay)
         return True
 
     def succeeded(self) -> None:
@@ -451,7 +470,7 @@ class NotionToSkillConverter(SkillConverter):
                     time.sleep(RATE_LIMIT_DELAY)
                 logger.info("   Fetched %d entries...", self._pages_fetched)
             except APIResponseError as e:
-                if e.status == 429 and self._retry_429.wait_for_retry():
+                if e.status == 429 and self._retry_429.wait_for_retry(_retry_after_seconds(e)):
                     continue  # noqa: E702
                 logger.error("Notion API error: %s", e)
                 break  # noqa: E702
@@ -580,7 +599,7 @@ class NotionToSkillConverter(SkillConverter):
                     pages.extend(self._extract_page_tree(client, child_id, current_path, depth + 1))
         except APIResponseError as e:
             # Bounded: the budget allows at most NOTION_429_MAX_RETRIES consecutive retries.
-            if e.status == 429 and self._retry_429.wait_for_retry():
+            if e.status == 429 and self._retry_429.wait_for_retry(_retry_after_seconds(e)):
                 return self._extract_page_tree(client, page_id, parent_path, depth)
             logger.warning("API error on page %s: %s", page_id, e)
         except Exception as e:
@@ -632,7 +651,7 @@ class NotionToSkillConverter(SkillConverter):
                     code_blocks.extend(bc)
                 time.sleep(RATE_LIMIT_DELAY)
             except APIResponseError as e:
-                if e.status == 429 and self._retry_429.wait_for_retry():
+                if e.status == 429 and self._retry_429.wait_for_retry(_retry_after_seconds(e)):
                     continue  # noqa: E702
                 if e.status == 429:
                     logger.warning(
