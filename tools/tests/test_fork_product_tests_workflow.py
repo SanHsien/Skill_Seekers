@@ -17,6 +17,9 @@ REQUIRED_PORTED_TESTS = (
     "tests/test_codeql_hardening.py",
     "tests/test_embedding_server.py",
     "tests/test_source_detector.py",
+    "tests/test_windows_output_paths.py",
+    "tests/test_source_text_embedding.py",
+    "tests/test_notion_rate_limit.py",
 )
 
 
