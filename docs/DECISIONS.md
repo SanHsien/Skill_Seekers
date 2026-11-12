@@ -410,3 +410,16 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 水位：`reviewed_pr_through` 483 → 486，`reviewed_issue_through` 481 → 485（對應 `tools/upstream_baseline.json`）。`monitored` 新增 `pr#484`、`pr#486`。`reviewed_through`（commit 軸）未變。
 
 **限制**：三項皆未移植，fork 的 PDF 與 install-agent 行為與上游一致、仍含上述缺陷。若維護者要求移植，應在另一批次先紅後綠處理，並在該批次記錄新的 head。
+
+## 2026-11-12：Pillow 新警示 #489、#490 dismiss（3.10 分支，承接 2026-11-08）
+
+**背景**：2026-11-11 Dependabot 對 `requirements.txt`、`uv.lock` 各新開一筆 Pillow 警示（GHSA-xvh5-g6gv-559v／CVE-2026-112902，libtiff encoder 記憶體外洩與 segfault；受影響 `>= 5.4.0, <= 12.3.0`，修補版 13.0.0）。新警示是新編號，不在 2026-11-08 的 dismiss 名單內，因此 Dependabot 更新 job（`uv in /. for Pillow`）在 2026-11-11 與 2026-11-12 兩次失敗，錯誤為 `security_update_not_possible`（latest resolvable 12.3.0、lowest non-vulnerable 13.0.0）。
+
+**查證（2026-11-12）**：
+- `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 確認兩筆為 open，且修補版仍為 13.0.0（`requires_python >=3.11`）。
+- `src/` 內未見 TIFF 寫出；Pillow 只在 PDF 路徑使用，未對不可信 TIFF 做編碼。
+- 本 fork 仍支援 Python 3.10（`pyproject.toml` `requires-python >=3.10`，2026-11-04（續）裁決），3.10 分支無可安裝的修補版。放棄 3.10 是產品決策，不在依賴修復範圍。
+
+**處置**：依 2026-11-08 維護者指示，以 `tolerable_risk` dismiss #489、#490，理由與重開條件同 2026-11-08 表格。dismiss 後 open 為 0。不改 `pyproject.toml`、`requirements.txt` 或鎖檔。
+
+**重開條件**：停 3.10（`requires-python` 提高、移除 3.10 分支），或 Pillow 發布 12.x 修補版。條件成立時在 GitHub 重開警示，或直接升級後由重掃關閉。

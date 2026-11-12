@@ -14,7 +14,7 @@
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
 | 修補或重評 chromadb 依賴 | patched version 出現、新版可用，或本專案開始提供 ChromaDB HTTP／改變 HttpClient 暴露面 | 查 `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 的 first_patched_version；最小鎖檔更新後跑 Chroma adapter 測試與 gate，核對告警 state=fixed；無修補時維持已 dismiss（2026-11-08 維護者指示），出現修補版時重開並升級 | Claude Opus | docs/DECISIONS.md「2026-10-28」「2026-11-08」chromadb；src/skill_seekers/cli/adaptors/chroma.py:289、310 |
-| 跟隨上游停用 Python 3.10 | 上游提高 `requires-python` 或 CI 矩陣移除 3.10；或 Pillow／filelock 發布支援 3.10 的修補版 | 參考 `7393009` 改 `requires-python`、CI、文件並重新產生鎖檔；`dev_check` 綠，核對 Pillow 與 filelock 的 3.10 分支警示（現為 dismissed，2026-11-08）已由重掃關閉為 fixed | Claude Opus | docs/DECISIONS.md「2026-11-04（續）」「2026-11-08」 |
+| 跟隨上游停用 Python 3.10 | 上游提高 `requires-python` 或 CI 矩陣移除 3.10；或 Pillow／filelock 發布支援 3.10 的修補版 | 參考 `7393009` 改 `requires-python`、CI、文件並重新產生鎖檔；`dev_check` 綠，核對 Pillow 與 filelock 的 3.10 分支警示（2026-11-08 的群組與 2026-11-12 的 #489、#490 現皆為 dismissed）已由重掃關閉為 fixed | Claude Opus | docs/DECISIONS.md「2026-11-04（續）」「2026-11-08」「2026-11-12：Pillow 新警示」 |
 | 隨選定追蹤線採用上游修正 | 上游合併既有待審 PR，或新增 commit 命中本線功能 | 逐筆核對 MCP null 參數與 provider 行為，Python 最低版本跟隨上游，保留允許路徑與發布 guard；產品回歸相對基準無新增失敗，維護 gate 通過才更新水位 | Codex | docs/DECISIONS.md「2026-10-24」PR／issue 軸；tools/upstream_baseline.json |
 | 補查 Windows 路徑邊界與工具顯示候選問題 | 帶標題／程式碼區塊連結或 cp950 主控台觸發問題（磁碟根目錄輸出已於 2026-11-12 修，見 docs/DECISIONS.md） | 先重現才修；工具不因輸出編碼崩潰，連結案例不誤判 | Codex | 深掃報告（2026-10-2x）「未修候選」；docs/DECISIONS.md「2026-10-28」embedding |
 | 重評 API 路徑信任範圍 | user_path 放寬，或新增 HTTP 端點直接操作請求中的路徑 | 對新端點測工作區外、允許根目錄、連接點與可信快取案例；重新核對原 CodeQL dismiss 理由，不能沿用舊裁決作自動豁免 | Claude Opus | docs/DECISIONS.md「2026-10-25：把本機使用者指定路徑的 API 端點改成真檢查」 |
