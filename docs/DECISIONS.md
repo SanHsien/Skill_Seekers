@@ -423,3 +423,23 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **處置**：依 2026-11-08 維護者指示，以 `tolerable_risk` dismiss #489、#490，理由與重開條件同 2026-11-08 表格。dismiss 後 open 為 0。不改 `pyproject.toml`、`requirements.txt` 或鎖檔。
 
 **重開條件**：停 3.10（`requires-python` 提高、移除 3.10 分支），或 Pillow 發布 12.x 修補版。條件成立時在 GitHub 重開警示，或直接升級後由重掃關閉。
+
+## 2026-11-13：soupsieve 警示 #491／#492（GHSA-mmhr-3c5m-f64f），依 Python 版本拆分
+
+**警示**：#491（`uv.lock`）與 #492（`requirements.txt`），high，GHSA-mmhr-3c5m-f64f，descendant combinator 多項式時間 DoS；受影響 `< 4.0.0`，修補版 4.0.0。Dependabot 對兩份清單的安全更新都回 `security_update_not_possible`。
+
+**決定**：`soupsieve` 依 Python 版本拆成兩支。3.11.5 以上（含 3.12、3.13、3.14）升到 4.1；3.10 與 3.11.0–3.11.4 維持 2.10。`requires-python` 維持 `>=3.10`，`beautifulsoup4` 不動。
+
+**理由（可查證）**：
+- PyPI 中繼資料：soupsieve 3.0.2 起，以及 4.0、4.0.1、4.1，`requires_python` 都是 `>=3.11.5`。2.10 是 `>=3.10`，3.10 沒有修補版。
+- beautifulsoup4 4.15.0 只宣告 `soupsieve>=1.6.1`，沒有上限；阻擋升級的是 soupsieve 的 Python 下限，不是 bs4。
+- 解析器輸出：`uv pip compile --python-version 3.10`（輸入 `beautifulsoup4>=4.14.2`、`soupsieve>=4.0.0`）回 `No solution found`，原因是 `soupsieve>=4.0 only supports >=3.11.5`。
+- 標記選擇：只寫 `python_version >= "3.11"` 會讓 3.11.0–3.11.4 選到裝不上的 4.1，所以用 `python_full_version >= "3.11.5"`。`uv lock` 自動產生的分支條件也是 `python_full_version >= '3.11.5'`，與此一致。
+
+**做法**：`uv lock --upgrade-package soupsieve`，鎖檔只改 soupsieve（2.10 → 4.1 加 2.10 分支），來源仍是 PyPI；`requirements.txt` 改為兩行：`soupsieve==4.1; python_full_version >= "3.11.5"` 與 `soupsieve==2.10; python_full_version < "3.11.5"`。`pyproject.toml` 不變。4.1 發布於 2026-11-10，已超過 48 小時冷卻期。
+
+**未處理的警示**：2.10 分支（3.10 與 3.11.0–3.11.4）的 soupsieve 警示保持 open，不 dismiss。修補版都要求 `>=3.11.5`，這個分支沒有可裝的修補版；與 2026-11-04（續）的 Pillow、filelock 3.10 分支同一類。
+
+**觸發條件**：停止支援 Python 3.10（把 `requires-python` 提高並重新產生鎖檔、移除 3.10 分支），或 soupsieve 發布支援 3.10 的修補版時重評。
+
+**驗證**：`uv lock --check` 通過；`uv pip compile` 在 3.10、3.11.0 解到 2.10，在 3.12 解到 4.1；bs4 相關測試 8 檔（`tests/test_epub_scraper.py`、`test_html_parsing.py`、`test_integration.py`、`test_language_detector.py`、`test_scraper_features.py`、`test_scraper_utils.py`、`test_swift_detection.py`、`test_word_scraper.py`）在 Python 3.12 下 326 passed、60 skipped、0 failed（需 `PYTHONUTF8=1`；Windows 預設 cp950 會讓兩個測試讀檔失敗，與依賴無關）。
