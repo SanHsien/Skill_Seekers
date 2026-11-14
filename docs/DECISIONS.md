@@ -443,3 +443,13 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **觸發條件**：停止支援 Python 3.10（把 `requires-python` 提高並重新產生鎖檔、移除 3.10 分支），或 soupsieve 發布支援 3.10 的修補版時重評。
 
 **驗證**：`uv lock --check` 通過；`uv pip compile` 在 3.10、3.11.0 解到 2.10，在 3.12 解到 4.1；bs4 相關測試 8 檔（`tests/test_epub_scraper.py`、`test_html_parsing.py`、`test_integration.py`、`test_language_detector.py`、`test_scraper_features.py`、`test_scraper_utils.py`、`test_swift_detection.py`、`test_word_scraper.py`）在 Python 3.12 下 326 passed、60 skipped、0 failed（需 `PYTHONUTF8=1`；Windows 預設 cp950 會讓兩個測試讀檔失敗，與依賴無關）。
+
+## 2026-11-15：opentelemetry 升到 1.45.2；3.10 分支的 Pillow／soupsieve 新警示 dismiss（承接 2026-11-12、11-13）
+
+**警示（2026-11-15 查）**：open 11 筆。opentelemetry-api #501（medium，修補版 1.45.2）；Pillow #493–#496（修補版 13.0.0）；soupsieve #497–#500（修補版 3.0.2），以及 #491、#492（修補版 4.0.0）。Dependabot 的 uv 安全更新 11-11～11-14 對 Pillow、soupsieve 連續失敗。
+
+**opentelemetry**：1.45.2 的 `requires_python` 是 `>=3.10`，可直接升。`uv lock --upgrade-package` 把 opentelemetry-api、sdk、proto、exporter-otlp-proto-common／-grpc 升到 1.45.2，exporter-otlp-common 與 semantic-conventions 升到 0.66b2；鎖檔只動這幾個套件。`requirements.txt` 與 `pyproject.toml` 不列 opentelemetry，不變。
+
+**Pillow／soupsieve**：查 PyPI 中繼資料，Pillow 13.0.0 要求 `>=3.11`，soupsieve 3.0.2 起（含 4.x）要求 `>=3.11.5`；3.11 以上的分支已經是修補版（Pillow 13.0.0、soupsieve 4.1），新警示只來自 3.10 分支（Pillow 12.3.0、soupsieve 2.10），沒有可安裝的修補版。照 2026-11-12 的做法以 `tolerable_risk` dismiss，理由同上；不改 `requires-python`（維持 `>=3.10` 是 2026-11-04（續）的產品決策）。
+
+**重開條件**：同 2026-11-12：停 3.10，或 Pillow／soupsieve 發布支援 3.10 的修補版。
