@@ -527,3 +527,18 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **何時重新檢視**：(1) 維護者推送後在 `https://github.com/SanHsien/Skill_Seekers/actions` 按 Enable，之後兩週每天看 `gh run list -R SanHsien/Skill_Seekers -L 5` 最新 run 的時間——停用門檻沒有官方數字，做完這些不保證不再被停；(2) push 上的 3.11–3.13 在 PR 才抓得到的版本問題出現時，push 恢復全矩陣；(3) 本線開始發版或推映像時，取回對應的上游 workflow。
 
 **限制**：提交時本 fork 的 Actions 仍在停用狀態，`paths` 規則與 `fromJSON` 矩陣只在本機做了 YAML 解析與 `tools/dev_check.ps1`，沒有在 GitHub 上實跑；推送後第一個 run 要確認 push 只出現 `py3.10`、`py3.14` 兩格。
+
+## 2026-11-22：Anthropic 預設模型換成 claude-sonnet-5-5，並不對 5 代 Claude 送 temperature；提示詞稽核三處小修
+
+**缺陷**：`agent_client.py` 的 Anthropic 預設模型是 `claude-sonnet-4-20250514`，該模型 2026-06-15 已退役（Anthropic model-migration 指南的 Retired 表，接替型號 `claude-sonnet-5-5`）。沒設 `ANTHROPIC_MODEL` 時 API 強化會直接失敗。上游 `development`（11-16）預設值相同，上游尚未修。
+
+**決定**：
+
+1. `DEFAULT_MODELS["anthropic"]` 與 `get_model()` 的退路改成 `claude-sonnet-5-5`，測試與三份文件（`docs/features/ENHANCEMENT.md`、`docs/reference/ENVIRONMENT_VARIABLES.md` 與 zh-CN 版）一起改。
+2. **只換 ID 不夠**：5 代 Claude（與 Opus 4.7／4.8）對非預設的 `temperature`／`top_p`／`top_k` 回 400，而 `enhance_skill.py` 固定以 `provider="anthropic"` 建 client（第 47 行）並傳 `temperature=0.3`（第 73 行），換 ID 後這條路徑每次都會 400。`_call_api` 的 Anthropic 分支改由 `_claude_rejects_sampling_params(model)` 判斷，這些模型不送 temperature；舊型號與走 Anthropic 協定的非 Claude 模型（MiniMax 等）照舊送。同一條路徑其他會 400 的項目已查過不存在：不送 `thinking`／`budget_tokens`、沒有 assistant prefill、不用 `tool_choice`；回應依 block 找第一個有 `text` 的，ThinkingBlock 開頭也安全（`agent_client.py` 回應解析段）。這延續 2026-11-02 採用 issue #480（Claude adaptor 改傳 `temperature=None`）的方向，只是改在傳輸層，涵蓋 `enhance_skill.py` 這條 #480 沒碰的路徑。
+3. 提示詞稽核（2026-11-22 批次 6）採用的三處上游檔小修：`distribution/claude-plugin/commands/create-skill.md` 第 4 步改用 `"$PRESET"`（原本寫死 `quick`，與第 2 步「沒指定才用 quick」矛盾，`install-skill.md` 已用 `"$PRESET"`）；`enhance_skill.py` 的 `CRITICAL RULES` 改成平常語氣並附理由，規則內容不變；`enhance_skill_local.py` 刪掉「Be larger than the original (200-1000+ lines)」，因為同檔的成功判定刻意不要求檔案變大（只看 mtime），這行只會逼 agent 灌水。
+4. 刻意不改：`guide_enhancer.py` 用 prompt 要求「Return ONLY valid JSON」再自行解析。改用 structured outputs 要先在 `AgentClient` 傳輸層加 provider 能力判斷（同時走多家 API 與本機 CLI），是設計改動。`video_visual.py` 的 `claude-haiku-4-5-20251001` 還沒退役，也不改。
+
+**驗證**：`uv run --locked --python 3.12 --extra mcp --extra ui python -m pytest tests/test_agent_client.py tests/test_adaptors/test_enhance_via_agent_client.py` 126 passed（新增 `test_default_anthropic_model_does_not_get_temperature_that_would_400` 與 8 格型號判斷）；`tests/test_agent_client.py` 加進 `tools/fork_product_tests.txt`。
+
+**何時重看**：上游改了預設模型或 `_call_api` 的 Anthropic 分支；或 Anthropic 調整哪些型號接受 sampling 參數。

@@ -424,7 +424,7 @@ export SKILL_SEEKER_MODEL=llama-3.3-70b-versatile
 
 | 变量              | 提供商             | 默认值（未设置时）          |
 |-------------------|--------------------|-----------------------------|
-| `ANTHROPIC_MODEL` | Anthropic          | `claude-sonnet-4-20250514`  |
+| `ANTHROPIC_MODEL` | Anthropic          | `claude-sonnet-5-5`         |
 | `OPENAI_MODEL`    | OpenAI/兼容        | `gpt-4o`                    |
 | `GOOGLE_MODEL`    | Gemini             | `gemini-2.0-flash`          |
 | `MOONSHOT_MODEL`  | Moonshot/Kimi      | `moonshot-v1-auto`          |

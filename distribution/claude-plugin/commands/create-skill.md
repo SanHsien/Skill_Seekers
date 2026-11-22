@@ -21,7 +21,7 @@ When the user provides a source via `$ARGUMENTS`, run the `skill-seekers create`
 3. If no `--output` is specified, default to `./output`.
 4. Run the create command:
    ```bash
-   skill-seekers create "$SOURCE" --preset quick --output "$OUTPUT"
+   skill-seekers create "$SOURCE" --preset "$PRESET" --output "$OUTPUT"
    ```
 5. After completion, read the generated `SKILL.md` and summarize what was created.
 6. If the user wants to target a specific platform (e.g., Claude, OpenAI, LangChain), run the package command after:

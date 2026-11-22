@@ -424,7 +424,7 @@ Used only when `SKILL_SEEKER_MODEL` is unset. Each falls back to a per-provider 
 
 | Variable          | Provider           | Default (if unset)          |
 |-------------------|--------------------|-----------------------------|
-| `ANTHROPIC_MODEL` | Anthropic          | `claude-sonnet-4-20250514`  |
+| `ANTHROPIC_MODEL` | Anthropic          | `claude-sonnet-5-5`         |
 | `OPENAI_MODEL`    | OpenAI/-compatible | `gpt-4o`                    |
 | `GOOGLE_MODEL`    | Gemini             | `gemini-2.0-flash`          |
 | `MOONSHOT_MODEL`  | Moonshot/Kimi      | `moonshot-v1-auto`          |

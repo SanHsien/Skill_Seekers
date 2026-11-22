@@ -10,6 +10,7 @@ import os
 import subprocess
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 from skill_seekers.cli.agent_client import (
     DEFAULT_ENHANCE_TIMEOUT,
@@ -304,7 +305,7 @@ class TestGetModel:
     @patch.dict(os.environ, {}, clear=True)
     def test_unknown_provider_falls_back_to_anthropic_default(self):
         model = AgentClient.get_model("unknown-provider")
-        assert model == "claude-sonnet-4-20250514"
+        assert model == "claude-sonnet-5-5"
 
     @patch.dict(os.environ, {"OPENAI_MODEL": "gpt-5"}, clear=True)
     def test_openai_model_env_var(self):
@@ -871,7 +872,8 @@ class TestAgentClientOverrides:
         assert client.client.messages.create.call_args.kwargs["model"] == "my-model"
 
     def test_system_and_temperature_anthropic(self, monkeypatch):
-        client = self._client(monkeypatch, provider="anthropic")
+        # A model that still accepts sampling params keeps the passthrough.
+        client = self._client(monkeypatch, provider="anthropic", model="claude-sonnet-4-5")
         msg = client.client.messages.create.return_value
         msg.stop_reason = "end_turn"
         msg.content = [type("B", (), {"text": "out"})()]
@@ -879,6 +881,37 @@ class TestAgentClientOverrides:
         kwargs = client.client.messages.create.call_args.kwargs
         assert kwargs["system"] == "be terse"
         assert kwargs["temperature"] == 0.3
+
+    def test_default_anthropic_model_does_not_get_temperature_that_would_400(self, monkeypatch):
+        # Claude 5-generation models 400 on a non-default temperature, and the
+        # default Anthropic model is one of them: enhance_skill passes 0.3.
+        client = self._client(monkeypatch, provider="anthropic")
+        msg = client.client.messages.create.return_value
+        msg.stop_reason = "end_turn"
+        msg.content = [type("B", (), {"text": "out"})()]
+        assert client.call("hi", system="be terse", temperature=0.3) == "out"
+        kwargs = client.client.messages.create.call_args.kwargs
+        assert kwargs["model"] == "claude-sonnet-5-5"
+        assert kwargs["system"] == "be terse"
+        assert "temperature" not in kwargs
+
+    @pytest.mark.parametrize(
+        ("model", "rejects"),
+        [
+            ("claude-sonnet-5-5", True),
+            ("claude-haiku-5-5", True),
+            ("anthropic.claude-opus-5-5", True),
+            ("claude-opus-4-7", True),
+            ("claude-opus-4-6", False),
+            ("claude-sonnet-4-5", False),
+            ("claude-sonnet-4-20250514", False),
+            ("MiniMax-M2", False),
+        ],
+    )
+    def test_sampling_param_rejection_matches_model_generation(self, model, rejects):
+        from skill_seekers.cli.agent_client import _claude_rejects_sampling_params
+
+        assert _claude_rejects_sampling_params(model) is rejects
 
     def test_system_and_temperature_openai(self, monkeypatch):
         client = self._client(monkeypatch, provider="openai")

@@ -395,11 +395,11 @@ YOUR TASK — Create an enhanced SKILL.md:
 
 7. **Keep the frontmatter** (---\\nname: ...\\n---) intact if present
 
-CRITICAL RULES:
-- NEVER include raw OCR text with line numbers or UI chrome — always clean it first
-- ALWAYS use correct language tags (detect from context, not from OCR metadata)
-- The transcript is your BEST source for understanding content — trust it over garbled OCR
-- Extract REAL code from the references, reconstruct where needed, but never invent code
+RULES:
+- Clean raw OCR text (line numbers, UI chrome) before it goes into the skill; raw OCR is unusable to a reader
+- Detect each code block's language from the code itself, not from OCR metadata, which is often wrong
+- When the transcript and garbled OCR disagree, trust the transcript
+- Use real code from the references and reconstruct damaged lines, but do not invent code
 - Keep code examples SHORT and focused (5-30 lines max per example)
 - Make the skill actionable: someone reading it should be able to implement what the tutorial teaches
 

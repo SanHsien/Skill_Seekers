@@ -4,6 +4,7 @@
 # same modules. Add a file here when a fork commit adds or edits a test under tests/.
 # Excluded on purpose: tests/test_web_api.py (see docs/DECISIONS.md, 2026-11-10 fork product tests).
 tests/test_adaptors/test_enhance_via_agent_client.py
+tests/test_agent_client.py
 tests/test_architectural_pattern_detector.py
 tests/test_architecture_scenarios.py
 tests/test_cloud_storage.py

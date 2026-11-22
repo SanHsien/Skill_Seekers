@@ -27,6 +27,7 @@ import base64
 import logging
 import mimetypes
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -98,12 +99,32 @@ AGENT_PRESETS = {
 
 # Default models per API provider
 DEFAULT_MODELS = {
-    "anthropic": "claude-sonnet-4-20250514",
+    "anthropic": "claude-sonnet-5-5",
     "moonshot": "moonshot-v1-auto",
     "google": "gemini-2.0-flash",
     "openai": "gpt-4o",
     "minimax": MINIMAX_DEFAULT_MODEL,
 }
+
+_CLAUDE_MODEL_RE = re.compile(r"claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d+))?")
+
+
+def _claude_rejects_sampling_params(model: str) -> bool:
+    """True for Claude models that 400 on a non-default temperature/top_p/top_k.
+
+    Covers every 5-generation family and Opus 4.7/4.8. Older Claude models and
+    non-Claude models served over the Anthropic protocol keep the parameter.
+    """
+    match = _CLAUDE_MODEL_RE.search(model or "")
+    if not match:
+        return False
+    family, major, minor = match.group(1), int(match.group(2)), match.group(3)
+    if major >= 5:
+        return True
+    # Dated IDs such as claude-sonnet-4-20250514 carry the date, not a minor version.
+    minor_num = int(minor) if minor and len(minor) <= 2 else 0
+    return family == "opus" and major == 4 and minor_num >= 7
+
 
 # Ordered provider registry — THE single home for which API providers exist,
 # which env vars hold their keys, and their auto-detection priority. Consumed
@@ -816,7 +837,13 @@ class AgentClient:
                 if system is not None:
                     kwargs["system"] = system
                 if temperature is not None:
-                    kwargs["temperature"] = temperature
+                    if _claude_rejects_sampling_params(model):
+                        # Claude 5-generation models (and Opus 4.7+) return a
+                        # 400 for a non-default temperature; drop it instead of
+                        # failing the whole enhancement.
+                        logger.debug("temperature not sent: %s rejects sampling params", model)
+                    else:
+                        kwargs["temperature"] = temperature
                 anthropic_content: str | list[dict[str, Any]] = prompt
                 if image:
                     media_type, image_data = image
@@ -1225,7 +1252,7 @@ class AgentClient:
             if model:
                 return model
 
-        return DEFAULT_MODELS.get(provider, "claude-sonnet-4-20250514")
+        return DEFAULT_MODELS.get(provider, "claude-sonnet-5-5")
 
     @staticmethod
     def detect_default_target() -> str:
