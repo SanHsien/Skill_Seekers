@@ -27,11 +27,13 @@
 | `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收（支援 `-All` 參數安裝產品依賴） |
 | `tools/test_product.ps1` | Windows 原生產品冒煙測試執行腳本 |
 | `requirements-dev.txt` | 維護依賴清單（pytest, ruff） |
-| `.github/workflows/ci.yml` | 純 Windows 原生 CI (windows-latest Python 3.10–3.14 矩陣)：compile / ruff / 維護測試 / 連結檢查 |
+| `.github/workflows/ci.yml` | 純 Windows 原生 CI：compile / ruff / 維護測試 / 連結檢查；PR 跑 Python 3.10–3.14 矩陣（必要檢查），push 到 main 只跑 3.10、3.14 |
+| `.github/workflows/sentence-transformers-security.yml` | 從 `ci.yml` 拆出的 sentence-transformers 安全回歸，只在 `pyproject.toml`／`uv.lock`／該測試變動時跑 |
+| 刪除的上游 workflow | `docker-publish.yml`、`release.yml`、`scheduled-updates.yml`、`vector-db-export.yml`、`test-vector-dbs.yml`、`quality-metrics.yml`：在 fork 被守衛擋下從不執行，卻持續產生 skipped run；GitHub 以用量為由停用本 fork 的 Actions 後刪除，見 docs/DECISIONS.md「2026-11-22：GitHub suspended Actions on this fork」 |
 | `.github/workflows/fork-product-tests.yml`、`tools/fork_product_tests.txt` | Windows 產品測試 job：上游 `tests.yml` 被守衛擋在 fork 外，這個 job 補跑 fork 移植／修改過的 `tests/` 離線子集（清單在 `tools/fork_product_tests.txt`） |
 | `.github/workflows/upstream-check.yml` | 每週對上游做未審查 commit、PR、issue 水位檢查 |
 | `.github/workflows/dependency-freshness.yml` | 每月依賴新鮮度檢查 |
-| `.github/workflows/codeql.yml` | CodeQL 安全掃描工作流程 |
+| `.github/workflows/codeql.yml` | CodeQL 安全掃描工作流程（ubuntu；push 只在改到 `.py` 時跑，PR 與每週排程不過濾） |
 | `docs/DECISIONS.md`、`docs/UPSTREAM.md`、`docs/DEVELOPMENT.md` | fork 維護與決策文件 |
 | `REVIEW.md` | 全庫風險與審查快照 |
 

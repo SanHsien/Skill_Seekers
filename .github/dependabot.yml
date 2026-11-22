@@ -9,9 +9,17 @@ updates:
       timezone: "Asia/Taipei"
     open-pull-requests-limit: 5
     labels: ["dependencies", "python"]
+    # Group every version update into at most two PRs and every security
+    # update into one, so a weekly run no longer opens one full CI round per
+    # package (docs/DECISIONS.md "2026-11-22: GitHub suspended Actions on this fork").
     groups:
       development-dependencies:
         dependency-type: "development"
+      python-dependencies:
+        patterns: ["*"]
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -482,3 +482,48 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **驗證**：`tests/test_cors_config.py`、`tests/test_embedding_server.py`（`TestLocalExposure`）、`tests/test_local_server_security.py` 共 78 項；對舊程式碼（還原 `cors_config.py`、`embedding/server.py`、`api/main.py`）跑為 13 failed，新碼 78 passed。
 
 **重開條件**：embedding server 或 config API 加上驗證；或上游自行處理這些預設值（同步時以較嚴者為準）。
+
+## 2026-11-22：GitHub suspended Actions on this fork；削減 fork 用不到的 Actions 用量
+
+**背景**：GitHub 以「scale of GitHub Actions usage」為由停用本 fork 的 workflow（Actions 頁顯示 banner；API 的 `actions/permissions` 仍是 `enabled`，所以 API 看不出來）。最後一次 completed 的 run 是 11-21 05:21Z。
+
+**量測**（`gh run list --limit 300` 加每個 run 的 `/jobs`，10-23～11-22 共 30 天；每個 job 時長進位到整分鐘，Linux ×1、Windows ×2）：
+
+| workflow | run 數（push／PR／排程） | 加權分鐘 | 每週 |
+|---|---|---|---|
+| `CI`（`ci.yml`） | 55（41／14／0） | 782 | **196** |
+| `CodeQL`（`codeql.yml`，Windows） | 59（41／14／4） | 356 | **89** |
+| Dependabot Updates | 37 | 51 | 13 |
+| `Upstream check` | 16（12／0／4） | 32 | 8 |
+| `Fork product tests` | 10（9／1／0） | 32 | 8 |
+| `Dependency freshness`、Dependency Graph | 16 | 23 | 6 |
+| 上游 workflow（`tests.yml`、`docker-publish.yml`、`scheduled-updates.yml`、`vector-db-export.yml`、`test-vector-dbs.yml`） | 106，全部 skipped（守衛擋下） | 0 | 0 |
+| **合計** | 299 | 1276 | **≈319** |
+
+`CI` 裡最大的是 `sentence-transformers security`（226，每次 push／PR 都 `uv sync --extra embedding`），其次是 5 格 Windows 矩陣（每格約 110）。同期 70 個 commit 裡 39 個改到 `.py`、15 個只改文件、12 個動到 `pyproject.toml`／`uv.lock`。
+
+**決定**（全部改檔，沒有用 `gh workflow disable`）：
+
+1. **刪除 6 支上游 workflow**：`docker-publish.yml`、`release.yml`、`scheduled-updates.yml`、`vector-db-export.yml`、`test-vector-dbs.yml`、`quality-metrics.yml`。每個 job 都有 `github.repository == 'yusufkaraaslan/Skill_Seekers'` 守衛，在 fork 從不執行，但 push 與兩個每週排程仍會產生 skipped run（30 天 51 個）；本線不發佈套件、不推映像、不產生排程技能。以後採用上游 commit 遇到這些檔案的 modify／delete 衝突，一律保留刪除。`tests.yml` 保留：`test_upstream_tests_workflow_is_left_to_upstream` 釘住它維持上游原樣（仍每週約 14 個 skipped run）。
+2. **`ci.yml` 矩陣依事件縮小**：PR 與手動觸發照舊跑 3.10–3.14（`test (windows / py3.11)`～`py3.14` 是必要檢查，名稱不變）；push 到 main 只跑上下界 3.10、3.14。`tools/tests` 是維護工具測試，版本差異幾乎都出在上下界。
+3. **`sentence-transformers security` 移出 `ci.yml`**，成為 `sentence-transformers-security.yml`，push 與 PR 都只在 `pyproject.toml`、`uv.lock`、該測試檔或 workflow 本身變動時跑。它不是必要檢查，PR 加路徑過濾不會卡住。
+4. **`codeql.yml`**：push 只在改到 `**/*.py` 或 workflow 本身時跑；PR 不加過濾（`Python security scan` 是必要檢查）；每週排程保留，用最新查詢全掃。runner 由 `windows-latest` 改 `ubuntu-latest`：Python 擷取不需建置，結果與 OS 無關，算力約減半。
+5. **`fork-product-tests.yml`**：push 與 PR 都略過「只改 `src/`、`tests/` 以外的 Markdown」的變更（`tests/` 下有 golden `.md`，所以留著）。不是必要檢查。
+6. **`.github/dependabot.yml`**：pip 的非開發依賴合併成 `python-dependencies` 一個 PR，安全更新合併成 `python-security` 一個 PR，不再一個套件開一個 PR、各跑一輪 CI＋CodeQL＋產品測試（每輪約 23 加權分）。
+
+**預估效果**（推估，不是量測；以每週約 10 次 push、3.5 個 PR 計）：
+
+| 項目 | 前 | 後 |
+|---|---|---|
+| `CI`（含拆出的 security job） | 196 | ≈95（push 2 格 ≈40、security 只在鎖檔變動 ≈7、PR 全矩陣 ≈49） |
+| `CodeQL` | 89 | ≈35（push 約 56% 會跑，ubuntu 約一半算力） |
+| `Fork product tests` | 8 | ≈6 |
+| 其他（Dependabot、upstream、freshness、graph） | 27 | ≈27 |
+| **合計** | **≈319／週** | **≈160／週（約 -50%）**；Dependabot 分組讓 PR 變少時可再降到約 140 |
+| skipped run | ≈27／週 | ≈14／週（只剩 `tests.yml`） |
+
+**還原**：刪掉的上游 workflow 用 `git checkout upstream/main -- .github/workflows/<檔名>` 取回並補回守衛；`ci.yml` 的矩陣改回固定的 `["3.10", "3.11", "3.12", "3.13", "3.14"]`，把 `sentence-transformers-security.yml` 的 job 搬回；`codeql.yml`、`fork-product-tests.yml` 刪掉 `paths` 區塊、runner 改回；`dependabot.yml` 刪掉新加的兩個 group。
+
+**何時重新檢視**：(1) 維護者推送後在 `https://github.com/SanHsien/Skill_Seekers/actions` 按 Enable，之後兩週每天看 `gh run list -R SanHsien/Skill_Seekers -L 5` 最新 run 的時間——停用門檻沒有官方數字，做完這些不保證不再被停；(2) push 上的 3.11–3.13 在 PR 才抓得到的版本問題出現時，push 恢復全矩陣；(3) 本線開始發版或推映像時，取回對應的上游 workflow。
+
+**限制**：提交時本 fork 的 Actions 仍在停用狀態，`paths` 規則與 `fromJSON` 矩陣只在本機做了 YAML 解析與 `tools/dev_check.ps1`，沒有在 GitHub 上實跑；推送後第一個 run 要確認 push 只出現 `py3.10`、`py3.14` 兩格。

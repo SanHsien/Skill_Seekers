@@ -3,6 +3,14 @@ name: CodeQL
 on:
   push:
     branches: ["main"]
+    # Pushes that change no Python source are skipped (CodeQL only scans
+    # Python here). pull_request stays unfiltered: "Python security scan" is a
+    # required check. The weekly schedule still scans everything with the
+    # latest queries. See docs/DECISIONS.md "2026-11-22: GitHub suspended
+    # Actions on this fork".
+    paths:
+      - "**/*.py"
+      - ".github/workflows/codeql.yml"
   pull_request:
     branches: ["main"]
   schedule:
@@ -20,7 +28,9 @@ concurrency:
 jobs:
   analyze:
     name: Python security scan
-    runs-on: windows-latest
+    # Python extraction needs no build, so the result does not depend on the
+    # runner OS; ubuntu is about half the compute of windows-latest.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:

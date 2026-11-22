@@ -8,8 +8,26 @@ name: Fork product tests
 on:
   push:
     branches: [main]
+    # Not a required check: skip runs where every changed file is Markdown
+    # outside src/ and tests/ (tests read golden .md files under tests/).
+    # Later patterns win. See docs/DECISIONS.md "2026-11-22: GitHub suspended
+    # Actions on this fork".
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "src/**"
+      - "tests/**"
   pull_request:
     branches: [main]
+    # Not a required check: skip runs where every changed file is Markdown
+    # outside src/ and tests/ (tests read golden .md files under tests/).
+    # Later patterns win. See docs/DECISIONS.md "2026-11-22: GitHub suspended
+    # Actions on this fork".
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "src/**"
+      - "tests/**"
   workflow_dispatch:
 
 permissions:
