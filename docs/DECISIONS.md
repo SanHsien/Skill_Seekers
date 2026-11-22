@@ -453,3 +453,15 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **Pillow／soupsieve**：查 PyPI 中繼資料，Pillow 13.0.0 要求 `>=3.11`，soupsieve 3.0.2 起（含 4.x）要求 `>=3.11.5`；3.11 以上的分支已經是修補版（Pillow 13.0.0、soupsieve 4.1），新警示只來自 3.10 分支（Pillow 12.3.0、soupsieve 2.10），沒有可安裝的修補版。照 2026-11-12 的做法以 `tolerable_risk` dismiss，理由同上；不改 `requires-python`（維持 `>=3.10` 是 2026-11-04（續）的產品決策）。
 
 **重開條件**：同 2026-11-12：停 3.10，或 Pillow／soupsieve 發布支援 3.10 的修補版。
+
+## 2026-11-22：依賴新鮮度檢查改為查不到即失敗；29 列逐一處理
+
+**缺陷**：`--github-output` 雖然被接受，`main()` 卻從沒寫出 `GITHUB_OUTPUT`，workflow 依 `needs_attention` 擋關，所以 PyPI 查詢被限流時報告寫 CHECK FAILED，job 照樣是綠的；過期的版本也一樣被蓋住。`753690e` 改成寫出輸出，且「沒查完」一律 exit 2（`--strict` 下「版本已過期」才是 1），workflow 在 exit 2 時仍會發布報告並讓 job 失敗。
+
+**後果**：修好後實際跑出 29 列 REVIEW UPDATE（沒有 Dependabot PR）。這是先前被蓋住的真實訊號，閘門照設計保留，逐列處理：
+
+- **升級 15 列**（`requirements.txt` 的 `==` pin 14 列 + `requirements-dev.txt` 的 ruff 下限）：annotated-types 0.8.0、anyio 4.16.0、attrs 26.1.0、beautifulsoup4 4.15.0、charset-normalizer 3.5.2、click 8.5.1、iniconfig 2.3.1、jsonschema 4.26.0、pluggy 1.7.0、PyGithub 2.10.0、pytest-asyncio 1.5.0、pytest-cov 7.1.0、python-dotenv 1.2.4、typing-inspection 0.4.5；`ruff>=0.17`（本機 gate 用 ruff 0.17.6 跑綠）。條件：支援 Python 3.10、發布超過 48 小時、不與其他 pin 綁定。
+- **延後 14 列**（`.github/dependency-deferrals.json`，各有理由與重評條件）：需要 Python >=3.11 而本 fork 仍支援 3.10 的（coverage、pydantic-settings、PyMuPDF、rpds-py，以及下限型的 python-multipart、sse-starlette、starlette）；大版本（anthropic 2.x、mcp 2.x 被 `<2` 排除、packaging 26）；pydantic／pydantic_core 成對且 3 天前才發布；uvicorn 是與 pyproject 一致的下限，抬高只是讓報告安靜；certifi 2026.11.20 仍在 48 小時冷卻期內（升級列在 `docs/fork/ROADMAP.md`）。
+- 注意：`requirements.txt` 是上游的快照，pin 的 `anthropic==0.40.0` 與 `pyproject.toml` 的 `>=0.76.0` 衝突；fork 的產品 CI 用 `uv.lock`，不裝這份清單。本輪不處理這個不一致。
+
+**驗證**：`uv pip compile requirements.txt` 在 Python 3.10、3.12、3.14 都可解；以 Python 3.10 venv 分別安裝升級前後的 `requirements.txt`，跑 `tools/fork_product_tests.txt` 的測試（`PYTHONPATH=src`），升級前後都是 716 passed、8 failed、2 errors、46 skipped，失敗與錯誤的測試集合完全相同（升級前就存在，與本次 pin 無關）；`tools\dev_check.ps1` 綠；實網路跑 `check_dependency_freshness.py --github-output` 得 `needs_attention=false`、exit 0。

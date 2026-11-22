@@ -1,4 +1,61 @@
 {
   "$comment": "每月依賴檢查用：已經看過、但這次不升的決定。deferredLatest 記下當時審視的版本，PyPI 一超過它就自動恢復提醒。",
-  "deferrals": {}
+  "deferrals": {
+    "anthropic": {
+      "deferredLatest": "2.12.0",
+      "reason": "2026-11-22: 2.x is a new major released 2026-11-20 (inside the 48h cooldown). The product code calls the 0.x client API; a major needs the enhancement tests on the real SDK. Note: requirements.txt pins 0.40.0 while pyproject.toml requires >=0.76.0 (uv.lock 0.76.0) - that snapshot is upstream's and is not what fork CI installs. Re-check: next anthropic release, or when uv.lock moves anthropic."
+    },
+    "certifi": {
+      "deferredLatest": "2026.11.20",
+      "reason": "2026-11-22: 2026.11.20 was uploaded 2026-11-20T23:37Z, inside the 48h supply-chain cooldown. Re-check: bump after 2026-11-22T23:37Z (tracked in docs/fork/ROADMAP.md, because this deferral alone would only lapse at the next certifi release)."
+    },
+    "coverage": {
+      "deferredLatest": "7.17.4",
+      "reason": "2026-11-22: 7.17.x requires Python >=3.11; requirements.txt has no markers and pyproject.toml still supports 3.10 (2026-11-04 decision). Re-check: a coverage release that supports 3.10, or this fork drops 3.10."
+    },
+    "mcp": {
+      "deferredLatest": "2.3.0",
+      "reason": "2026-11-22: the declared range is mcp>=1.25,<2 in both requirements.txt and pyproject.toml (upstream's bound); 2.x is a new major the MCP server has not been ported to. Re-check: upstream lifts the <2 bound, or the next mcp release."
+    },
+    "packaging": {
+      "deferredLatest": "26.3",
+      "reason": "2026-11-22: 25 -> 26 is a major; the tested install (uv.lock) still resolves packaging 24.2, so 26.x has never run in fork CI. Re-check: uv.lock upgrades packaging, or the next packaging release."
+    },
+    "pydantic": {
+      "deferredLatest": "2.14.4",
+      "reason": "2026-11-22: 2.14.4 was released 2026-11-19 and must move together with pydantic_core (exact pin pair) and pydantic-settings (latest needs Python >=3.11). uv.lock is on 2.12.5. Re-check: uv.lock upgrades pydantic, or the next pydantic release."
+    },
+    "pydantic-core": {
+      "deferredLatest": "2.50.5",
+      "reason": "2026-11-22: exact companion of pydantic; moves only with the pydantic pin (see the pydantic entry). Re-check: with pydantic."
+    },
+    "pydantic-settings": {
+      "deferredLatest": "2.16.3",
+      "reason": "2026-11-22: 2.16.x requires Python >=3.11; this fork still supports 3.10. Re-check: a release that supports 3.10, or this fork drops 3.10."
+    },
+    "pymupdf": {
+      "deferredLatest": "2.1",
+      "reason": "2026-11-22: 2.x is a new major and requires Python >=3.11; this fork still supports 3.10 and the PDF scraper has not been tested on 2.x (uv.lock 1.26.7). Re-check: the next PyMuPDF release, or this fork drops 3.10."
+    },
+    "python-multipart": {
+      "deferredLatest": "0.0.34",
+      "reason": "2026-11-22: declared as a floor (>=0.0.20) mirrored from upstream; installers already resolve the newest release, and 0.0.33+ requires Python >=3.11, so raising the floor would drop 3.10. Re-check: a security advisory below a newer floor, or this fork drops 3.10."
+    },
+    "rpds-py": {
+      "deferredLatest": "2026.9.1",
+      "reason": "2026-11-22: the calendar-versioned line requires Python >=3.11; this fork still supports 3.10. Re-check: a release that supports 3.10, or this fork drops 3.10."
+    },
+    "sse-starlette": {
+      "deferredLatest": "3.7.0",
+      "reason": "2026-11-22: declared as a floor (>=3.0.2) mirrored from pyproject.toml's mcp extra; 3.7.0 requires Python >=3.11, so raising the floor would drop 3.10. Re-check: a security advisory below a newer floor, or this fork drops 3.10."
+    },
+    "starlette": {
+      "deferredLatest": "1.10.0",
+      "reason": "2026-11-22: declared as a floor (>=0.48.0) mirrored from pyproject.toml's mcp extra; 1.10.0 requires Python >=3.11, so raising the floor would drop 3.10. Re-check: a security advisory below a newer floor, or this fork drops 3.10."
+    },
+    "uvicorn": {
+      "deferredLatest": "0.54.0",
+      "reason": "2026-11-22: declared as a floor (>=0.38.0) mirrored from pyproject.toml's mcp extra; installers already resolve the newest release. Raising it would only silence this report. Re-check: a security advisory below a newer floor, or upstream raises the floor."
+    }
+  }
 }

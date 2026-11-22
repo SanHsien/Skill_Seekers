@@ -9,6 +9,7 @@
 ## 近期：可以直接動手
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
+| 2026-11-22T23:37Z 之後把 `requirements.txt` 的 `certifi` 升到 2026.11.20，並刪掉它的 deferral | 2026-11-22 審查時還在 48 小時冷卻期內；這筆 deferral 要等下一版 certifi 才會自動失效，不靠這一列會被一直蓋住 | `uv pip compile requirements.txt --python-version 3.10` 可解；`check_dependency_freshness.py` 的 certifi 列是 OK | Claude Sonnet | `.github/dependency-deferrals.json` certifi；docs/DECISIONS.md「2026-11-22：依賴新鮮度檢查改為查不到即失敗」 |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
