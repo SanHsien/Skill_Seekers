@@ -3,7 +3,7 @@
   "deferrals": {
     "anthropic": {
       "deferredLatest": "2.12.0",
-      "reason": "2026-11-22: 2.x is a new major released 2026-11-20 (inside the 48h cooldown). The product code calls the 0.x client API; a major needs the enhancement tests on the real SDK. Note: requirements.txt pins 0.40.0 while pyproject.toml requires >=0.76.0 (uv.lock 0.76.0) - that snapshot is upstream's and is not what fork CI installs. Re-check: next anthropic release, or when uv.lock moves anthropic."
+      "reason": "2026-11-22: 2.x is a new major (2.0.0 released 2026-10-21; latest 2.12.0 released 2026-11-20). The product code calls the 0.x client API; a major needs the enhancement tests on the real SDK. Note: requirements.txt pins 0.40.0 while pyproject.toml requires >=0.76.0 (uv.lock 0.76.0) - that snapshot is upstream's and is not what fork CI installs. Re-check: next anthropic release, or when uv.lock moves anthropic."
     },
     "certifi": {
       "deferredLatest": "2026.11.20",
