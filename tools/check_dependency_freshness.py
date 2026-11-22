@@ -10,6 +10,11 @@ nothing here edits a requirements file: a newer release is a prompt to read the
 changelog and run the suite, not a merge.
 
     python tools/check_dependency_freshness.py --output report.md --github-output
+
+Exit codes: 0 the check finished and nothing needs review (or it does but --strict was
+not given); 1 --strict and a declared range has aged; 2 the check did not finish (a PyPI
+lookup failed, a requirement has no floor to compare, or a requirements file is missing).
+"Could not check" is never reported as a pass, and never as an aged floor.
 """
 
 from __future__ import annotations
@@ -248,7 +253,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Return non-zero when a declared range has aged.",
+        help="Return 1 when a declared range has aged (2 is always: check incomplete).",
     )
     args = parser.parse_args()
 
@@ -264,12 +269,14 @@ def main() -> int:
     output_path.write_text(report, encoding="utf-8")
     print(report)
 
-    if error:
+    # The workflow gates on these fields; without them a CHECK FAILED row leaves the job green.
+    if args.github_output:
+        write_github_output(rows, output_path)
+    # 2 = the check did not finish (a lookup failed, a floor could not be compared, or the
+    # requirements could not be read). It is never folded into 1, which means "a floor has aged".
+    if error or not rows or any(bool(row["check_failed"]) for row in rows):
         return 2
-    if args.strict and any(
-        needs_review(row) or bool(row["check_failed"])
-        for row in rows
-    ):
+    if args.strict and any(needs_review(row) for row in rows):
         return 1
     return 0
 

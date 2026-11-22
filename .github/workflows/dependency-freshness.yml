@@ -54,6 +54,8 @@ jobs:
 
       - name: Include open Dependabot pull requests
         id: tracker
+        # The checker exits 2 when a lookup failed; still publish the report it wrote.
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
           CHECKER_NEEDS_ATTENTION: ${{ steps.deps.outputs.needs_attention }}
@@ -79,7 +81,7 @@ jobs:
           cat dependency-freshness-report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Mark maintenance as required
-        if: steps.tracker.outputs.needs_attention == 'true'
+        if: ${{ !cancelled() && (steps.deps.outcome == 'failure' || steps.tracker.outputs.needs_attention == 'true') }}
         run: |
           echo "::error::Dependency maintenance is required. See the workflow summary and Dependabot pull requests."
           exit 1

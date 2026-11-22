@@ -136,3 +136,103 @@ def test_equivalent_package_names_are_loaded_only_once(tmp_path: Path) -> None:
     )
     packages = checker.load_direct_dependencies(tmp_path)
     assert [package["name"] for package in packages] == ["Demo_Package", "other-package"]
+
+
+# --------------------------------------------------------------------------------------
+# Fail-closed contract: "could not check" must turn the workflow gate red, and must stay
+# distinguishable from "a floor has aged" (exit 2 vs exit 1, as in the upstream checker).
+
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "dependency-freshness.yml"
+
+
+def _rate_limited(request: object, *args: object, **kwargs: object) -> object:
+    import io
+    import urllib.error
+    from email.message import Message
+
+    headers = Message()
+    headers["X-RateLimit-Remaining"] = "0"
+    raise urllib.error.HTTPError(
+        getattr(request, "full_url", str(request)),
+        403,
+        "rate limit exceeded",
+        headers,
+        io.BytesIO(b'{"message": "rate limit exceeded"}'),
+    )
+
+
+def _run_main(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *flags: str
+) -> tuple[int, dict[str, str], str]:
+    monkeypatch.setattr(
+        checker,
+        "load_direct_dependencies",
+        lambda root=checker.REPO_ROOT: checker.parse_requirements(
+            "requests>=2.31\n", "requirements.txt"
+        ),
+    )
+    monkeypatch.setattr(checker, "load_deferrals", lambda *args, **kwargs: {})
+    github_output = tmp_path / "github_output.txt"
+    github_output.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
+    report = tmp_path / "report.md"
+    monkeypatch.setattr(
+        sys, "argv", ["check_dependency_freshness.py", "--output", str(report), *flags]
+    )
+    code = checker.main()
+    outputs = dict(
+        line.split("=", 1)
+        for line in github_output.read_text(encoding="utf-8").splitlines()
+        if "=" in line
+    )
+    return code, outputs, report.read_text(encoding="utf-8")
+
+
+def test_rate_limited_lookup_turns_the_workflow_gate_red(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checker.urllib.request, "urlopen", _rate_limited)
+    code, outputs, report = _run_main(monkeypatch, tmp_path, "--github-output")
+    assert outputs.get("needs_attention") == "true"
+    assert outputs.get("check_failed") == "true"
+    assert "CHECK FAILED" in report
+    assert "REVIEW UPDATE" not in report
+    assert code == 2
+
+
+def test_strict_lookup_failure_is_not_reported_as_an_aged_floor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checker.urllib.request, "urlopen", _rate_limited)
+    code, outputs, _ = _run_main(monkeypatch, tmp_path, "--strict", "--github-output")
+    assert code == 2
+    assert outputs.get("outdated") == "false"
+
+
+def test_a_completed_check_with_nothing_aged_keeps_the_gate_quiet(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checker, "fetch_pypi_version", lambda name: "2.31.0")
+    code, outputs, _ = _run_main(monkeypatch, tmp_path, "--strict", "--github-output")
+    assert code == 0
+    assert outputs.get("needs_attention") == "false"
+    assert outputs.get("check_failed") == "false"
+
+
+def test_an_aged_floor_under_strict_exits_one_not_two(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(checker, "fetch_pypi_version", lambda name: "3.0.0")
+    code, outputs, _ = _run_main(monkeypatch, tmp_path, "--strict", "--github-output")
+    assert code == 1
+    assert outputs.get("outdated") == "true"
+
+
+def test_workflow_still_publishes_and_fails_when_the_checker_exits_two() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    tracker = text.split("- name: Include open Dependabot pull requests", 1)[1]
+    tracker_header = tracker.split("run:", 1)[0]
+    assert "!cancelled()" in tracker_header
+    gate = text.split("- name: Mark maintenance as required", 1)[1].split("run:", 1)[0]
+    assert "steps.deps.outcome == 'failure'" in gate
+    assert "!cancelled()" in gate
