@@ -22,6 +22,7 @@
 | `README.en.md` | 英文鏡像；加入 fork 維護資訊 |
 | `AGENTS.md` | 本 fork 的 AI 維護單一真相源 |
 | `NOTICE.md` / `FORK.md` / `LICENSE` | 來源、授權與同步說明 |
+| `src/skill_seekers/local_server_security.py`、`cors_config.py`、`embedding/server.py`、`api/main.py` | 本機無驗證伺服器預設只綁 `127.0.0.1`、CORS 預設無來源（`*` 需明寫）、loopback 綁定時加 Host 白名單；見 docs/DECISIONS.md「2026-11-22：本機伺服器預設只綁 loopback」。回貢上游前需維護者同意 |
 | `tools/dev_check.ps1` | Windows 本機一鍵 gate（維護工具，不安裝重型依賴） |
 | `tools/bootstrap_dev.ps1` | Windows 本機一鍵初始化與驗收（支援 `-All` 參數安裝產品依賴） |
 | `tools/test_product.ps1` | Windows 原生產品冒煙測試執行腳本 |

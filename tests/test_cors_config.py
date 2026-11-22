@@ -8,10 +8,12 @@ from skill_seekers.cors_config import resolve_cors_config
 @pytest.mark.parametrize(
     "raw, origins, credentials",
     [
-        # Wildcard / empty -> public, credentials disabled (browsers reject the combo).
+        # Empty -> no cross-origin access at all (secure default, not a wildcard).
+        ("", [], False),
+        ("   ", [], False),
+        (",,", [], False),
+        # Explicit wildcard -> public, credentials disabled (browsers reject the combo).
         ("*", ["*"], False),
-        ("", ["*"], False),
-        ("   ", ["*"], False),
         (" * ", ["*"], False),
         # A wildcard mixed into a list must still collapse to public, no credentials.
         ("*,https://a.com", ["*"], False),
@@ -28,8 +30,14 @@ def test_resolve_cors_config_explicit(raw, origins, credentials):
     assert resolve_cors_config(raw) == (origins, credentials)
 
 
-def test_resolve_cors_config_env_default(monkeypatch):
+def test_resolve_cors_config_env_default_is_not_a_wildcard(monkeypatch):
+    """Unset CORS_ORIGINS must not let arbitrary web pages call the server."""
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    assert resolve_cors_config() == ([], False)
+
+
+def test_resolve_cors_config_env_wildcard_is_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "*")
     assert resolve_cors_config() == (["*"], False)
 
 

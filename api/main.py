@@ -22,18 +22,20 @@ app = FastAPI(
 )
 
 # CORS middleware - configure allowed origins via CORS_ORIGINS env var.
-# Use comma-separated list for specific origins, or "*" for public access.
+# Default is NO cross-origin access (fork divergence, docs/DECISIONS.md 2026-11-22):
+# a wildcard lets any web page call this unauthenticated API from the user's browser.
+# Use a comma-separated list for specific origins, or "*" as an explicit public opt-in.
 # Example: CORS_ORIGINS=https://skillseekersweb.com,https://app.skillseekers.dev
 # Note: browsers reject allow_credentials=True with allow_origins=["*"].
-_cors_origins_raw = os.environ.get("CORS_ORIGINS", "*")
+_cors_origins_raw = os.environ.get("CORS_ORIGINS", "")
 _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
-if not _cors_origins or "*" in _cors_origins:
+if "*" in _cors_origins:
     # Public access: a wildcard (even mixed into a list) forces credentials off,
     # because browsers reject allow_credentials=True with allow_origins=["*"].
     _cors_origins = ["*"]
     _cors_credentials = False
 else:
-    _cors_credentials = True
+    _cors_credentials = bool(_cors_origins)
 
 app.add_middleware(
     CORSMiddleware,
@@ -212,7 +214,27 @@ async def health_check():
     return {"status": "healthy", "service": "skill-seekers-api"}
 
 
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+
+
+def apply_loopback_host_allowlist(application: FastAPI, bind_host: str) -> bool:
+    """Reject non-loopback Host headers (DNS rebinding) when bound to loopback.
+
+    Returns True when the allowlist was installed. A non-loopback bind is the
+    operator's explicit opt-in to the network, so no allowlist is added then.
+    """
+    if bind_host.strip("[]").lower() not in LOOPBACK_HOSTS:
+        return False
+    from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+    application.add_middleware(TrustedHostMiddleware, allowed_hosts=list(LOOPBACK_HOSTS))
+    return True
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Loopback by default; set API_HOST=0.0.0.0 to opt in to LAN access.
+    _host = os.environ.get("API_HOST", "127.0.0.1")
+    apply_loopback_host_allowlist(app, _host)
+    uvicorn.run(app, host=_host, port=8000)

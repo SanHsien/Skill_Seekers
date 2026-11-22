@@ -8,7 +8,9 @@ tests/test_architectural_pattern_detector.py
 tests/test_architecture_scenarios.py
 tests/test_cloud_storage.py
 tests/test_codeql_hardening.py
+tests/test_cors_config.py
 tests/test_embedding_server.py
+tests/test_local_server_security.py
 tests/test_heading_headerlinks.py
 tests/test_llms_txt_downloader.py
 tests/test_markdown_parsing.py

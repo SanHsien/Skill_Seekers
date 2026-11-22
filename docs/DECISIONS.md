@@ -465,3 +465,20 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 - 注意：`requirements.txt` 是上游的快照，pin 的 `anthropic==0.40.0` 與 `pyproject.toml` 的 `>=0.76.0` 衝突；fork 的產品 CI 用 `uv.lock`，不裝這份清單。本輪不處理這個不一致。
 
 **驗證**：`uv pip compile requirements.txt` 在 Python 3.10、3.12、3.14 都可解；以 Python 3.10 venv 分別安裝升級前後的 `requirements.txt`，跑 `tools/fork_product_tests.txt` 的測試（`PYTHONPATH=src`），升級前後都是 716 passed、8 failed、2 errors、46 skipped，失敗與錯誤的測試集合完全相同（升級前就存在，與本次 pin 無關）；`tools\dev_check.ps1` 綠；實網路跑 `check_dependency_freshness.py --github-output` 得 `needs_attention=false`、exit 0。
+
+## 2026-11-22：本機伺服器預設只綁 loopback，CORS 預設無來源，並加 Host 白名單（推翻 2026-10-26 的「預設綁定位址不改」）
+
+**缺陷（艦隊稽核）**：embedding server 預設綁 `0.0.0.0`、沒有驗證，CORS 預設 `*`；`api/main.py` 的 `__main__` 同樣綁 `0.0.0.0`、CORS 預設 `*`。任何網頁或區網主機都能經 `/embed*` 花掉使用者的 `OPENAI_API_KEY`／`VOYAGE_API_KEY` 額度，或呼叫 `/cache/clear` 清快取。瀏覽器端另有 DNS rebinding：攻擊者網域解析到 127.0.0.1 後，請求對瀏覽器而言是同源，CORS 擋不住。
+
+**決定**：
+- 綁定：`EMBEDDING_HOST` 預設改 `127.0.0.1`，並新增 `--host`／`--port` 旗標（`docs/DOCKER_DEPLOYMENT.md` 本來就寫了這兩個旗標，程式卻沒有實作）。要給區網就明確傳 `--host 0.0.0.0` 或設 `EMBEDDING_HOST`，啟動時印警告。`api/main.py` 同樣改 `API_HOST`，預設 `127.0.0.1`。
+- CORS：`CORS_ORIGINS` 未設或空字串 → 不允許任何跨來源（`[]`）；`*` 仍可用但必須明寫。這是 `cors_config.resolve_cors_config` 的共用政策，所以 `mcp/server_fastmcp.py` 的 HTTP 傳輸也一併變嚴。`api/main.py` 是獨立部署，行為同步；`render.yaml` 明寫 `CORS_ORIGINS="*"`，維持該公開唯讀 config API 原本的行為，但改為明示。
+- Host 白名單：新增 `src/skill_seekers/local_server_security.py`。綁 loopback 時只接受 `localhost`、`127.0.0.1`、`::1`（含 `[::1]:port` 的解析），其餘回 400；綁非 loopback 視為操作者已選擇對網路開放，白名單為 `*`；`SKILL_SEEKERS_ALLOWED_HOSTS` 可明確覆寫。`api/main.py` 只在 `__main__` 且綁 loopback 時加（Starlette `TrustedHostMiddleware`）；用 `uvicorn main:app` 啟動的部署（Render）不加。
+
+**推翻的舊裁決**：2026-10-26 為了容器範例不破壞而保留 `0.0.0.0` 預設。現在改為容器內明確 `--host 0.0.0.0`（本來就是文件寫法），且文件的 port 對映改成 `127.0.0.1:8000:8000`，不再把無驗證服務發佈到主機所有介面。
+
+**明確不處理**：`Dockerfile.mcp`／`render-mcp.yaml` 的 `--host 0.0.0.0` 是容器／雲端部署的明示參數，未動；MCP HTTP 傳輸沒有驗證這件事另案。伺服器本身仍然沒有驗證——loopback 綁定加 Host 白名單擋的是網頁與區網，擋不了同一台機器上的其他本機程式。
+
+**驗證**：`tests/test_cors_config.py`、`tests/test_embedding_server.py`（`TestLocalExposure`）、`tests/test_local_server_security.py` 共 78 項；對舊程式碼（還原 `cors_config.py`、`embedding/server.py`、`api/main.py`）跑為 13 failed，新碼 78 passed。
+
+**重開條件**：embedding server 或 config API 加上驗證；或上游自行處理這些預設值（同步時以較嚴者為準）。

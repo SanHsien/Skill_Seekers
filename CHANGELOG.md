@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Fork maintenance: the embedding server and `api/main.py` bind to `127.0.0.1` by default (LAN via `--host`/`EMBEDDING_HOST`/`API_HOST`), `CORS_ORIGINS` defaults to no origins (`*` must be explicit), and a loopback bind only answers loopback `Host` headers (DNS-rebinding guard). See docs/DECISIONS.md 2026-11-22.
+
 ### Fixed
 - Fork maintenance: upstream PR #478 ported (open upstream at head 85cd5ad): `doc_scraper` drops `a.headerlink` anchors before reading heading text, so MkDocs/Sphinx pilcrows no longer land in `**Contents:**`. Upstream issue #480: the Claude adaptor no longer sends `temperature` (rejected by newer models).
 - Fork maintenance: upstream PR #482 partially ported (open upstream at head eaeb401): `WorkflowEngine.preview()` is restored so `--workflow-dry-run` no longer crashes, and custom stage prompts substitute only well-formed `{var}` fields so literal JSON braces no longer disable all context substitution. Upstream issue #481: `parse_vtt` keeps cue text that is only digits.

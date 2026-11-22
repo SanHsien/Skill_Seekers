@@ -13,5 +13,9 @@ services:
         value: 3.10
       - key: PORT
         generateValue: true
+      # Public read-only config API: cross-origin access is an explicit opt-in
+      # (the code default is none; see docs/DECISIONS.md 2026-11-22).
+      - key: CORS_ORIGINS
+        value: "*"
     healthCheckPath: /health
     autoDeploy: true

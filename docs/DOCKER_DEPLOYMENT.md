@@ -186,7 +186,7 @@ docker run -it \
 ```bash
 docker run -d \
   --name skillseekers-embed \
-  -p 8000:8000 \
+  -p 127.0.0.1:8000:8000 \
   -e OPENAI_API_KEY=$OPENAI_API_KEY \
   -e VOYAGE_API_KEY=$VOYAGE_API_KEY \
   -v skillseekers-cache:/app/cache \
@@ -265,7 +265,7 @@ services:
     image: yusyuss/skill-seekers:latest
     container_name: skillseekers-embed
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - VOYAGE_API_KEY=${VOYAGE_API_KEY}

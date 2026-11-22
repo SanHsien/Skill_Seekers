@@ -63,7 +63,9 @@ def mock_cache():
 
 @pytest.fixture
 def client(mock_generator, mock_cache):  # noqa: ARG001
-    with TestClient(_embedding_app) as c:
+    # The server only answers loopback Host headers by default, so the in-process
+    # client has to address it as localhost (TestClient defaults to "testserver").
+    with TestClient(_embedding_app, base_url="http://localhost") as c:
         yield c
 
 
@@ -290,3 +292,47 @@ class TestCacheEndpoints:
         data = response.json()
         assert data["status"] == "ok"
         assert data["deleted"] == 3
+
+
+class TestLocalExposure:
+    """The server is unauthenticated: loopback bind, no wildcard CORS, Host allowlist."""
+
+    @pytest.mark.parametrize("host", ["localhost", "127.0.0.1", "localhost:8000", "[::1]:8000"])
+    def test_loopback_host_headers_are_served(self, client, host):
+        assert client.get("/", headers={"Host": host}).status_code == 200
+
+    @pytest.mark.parametrize("host", ["evil.example", "192.168.1.5:8000", "localhost.evil.example"])
+    def test_foreign_host_header_is_rejected(self, client, host):
+        """DNS-rebinding / LAN-forged Host must not reach /embed*."""
+        response = client.post("/embed", json={"text": "x"}, headers={"Host": host})
+        assert response.status_code == 400
+
+    def test_foreign_host_cannot_clear_cache(self, client, mock_cache):
+        response = client.post("/cache/clear", headers={"Host": "evil.example"})
+        assert response.status_code == 400
+        mock_cache.clear.assert_not_called()
+
+    def test_default_cors_does_not_allow_foreign_origin(self, client):
+        response = client.get("/", headers={"Origin": "https://evil.example"})
+        assert "access-control-allow-origin" not in response.headers
+
+    def test_main_binds_loopback_by_default(self, monkeypatch):
+        from skill_seekers.embedding import server
+
+        # main() writes EMBEDDING_HOST; set first so monkeypatch restores it afterwards.
+        monkeypatch.setenv("EMBEDDING_HOST", "placeholder")
+        monkeypatch.delenv("EMBEDDING_HOST")
+        monkeypatch.setattr("sys.argv", ["skill-seekers-embed"])
+        with patch.object(server.uvicorn, "run") as run:
+            server.main()
+        assert run.call_args.kwargs["host"] == "127.0.0.1"
+
+    def test_main_lan_bind_requires_explicit_host_flag(self, monkeypatch):
+        from skill_seekers.embedding import server
+
+        monkeypatch.setenv("EMBEDDING_HOST", "placeholder")
+        monkeypatch.delenv("EMBEDDING_HOST")
+        monkeypatch.setattr("sys.argv", ["skill-seekers-embed", "--host", "0.0.0.0"])
+        with patch.object(server.uvicorn, "run") as run:
+            server.main()
+        assert run.call_args.kwargs["host"] == "0.0.0.0"

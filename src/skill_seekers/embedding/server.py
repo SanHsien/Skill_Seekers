@@ -14,9 +14,13 @@ Usage:
     python -m skill_seekers.embedding.server
 
     # Or with uvicorn
-    uvicorn skill_seekers.embedding.server:app --host 0.0.0.0 --port 8000
+    uvicorn skill_seekers.embedding.server:app --host 127.0.0.1 --port 8000
+
+    # Reachable from the LAN (explicit opt-in; the server has no authentication)
+    python -m skill_seekers.embedding.server --host 0.0.0.0
 """
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -44,6 +48,12 @@ from .models import (
 from .generator import EmbeddingGenerator
 from .cache import EmbeddingCache
 from ..cors_config import resolve_cors_config
+from ..local_server_security import (
+    DEFAULT_BIND_HOST,
+    HostAllowlistMiddleware,
+    is_loopback_host,
+    resolve_allowed_hosts,
+)
 
 
 # Initialize FastAPI app
@@ -65,6 +75,13 @@ if FASTAPI_AVAILABLE:
         allow_credentials=_allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    # Host allowlist (blocks DNS rebinding) while bound to loopback; see
+    # local_server_security.py. Added last so it is the outermost layer.
+    app.add_middleware(
+        HostAllowlistMiddleware,
+        allowed_hosts=resolve_allowed_hosts(os.getenv("EMBEDDING_HOST", DEFAULT_BIND_HOST)),
     )
 
     # Initialize generator and cache
@@ -352,10 +369,28 @@ def main():
         print("Error: FastAPI not available. Install with: pip install fastapi uvicorn")
         sys.exit(1)
 
-    # Get configuration from environment
-    host = os.getenv("EMBEDDING_HOST", "0.0.0.0")
-    port = int(os.getenv("EMBEDDING_PORT", "8000"))
+    parser = argparse.ArgumentParser(description="Skill Seekers Embedding API server")
+    parser.add_argument(
+        "--host",
+        default=os.getenv("EMBEDDING_HOST", DEFAULT_BIND_HOST),
+        help="bind address (default: 127.0.0.1; a non-loopback address exposes an "
+        "unauthenticated server to the network)",
+    )
+    parser.add_argument(
+        "--port", type=int, default=int(os.getenv("EMBEDDING_PORT", "8000")), help="bind port"
+    )
+    args = parser.parse_args()
+    host, port = args.host, args.port
     reload = os.getenv("EMBEDDING_RELOAD", "false").lower() == "true"
+
+    # uvicorn re-imports the app by string, so hand the resolved host over via the
+    # environment; the Host allowlist is computed from it at import time.
+    os.environ["EMBEDDING_HOST"] = host
+    if not is_loopback_host(host):
+        print(
+            f"WARNING: binding to {host} exposes this unauthenticated server (and your "
+            "OPENAI_API_KEY/VOYAGE_API_KEY quota) to the network."
+        )
 
     print(f"🚀 Starting Embedding API server on {host}:{port}")
     print(f"📚 API documentation: http://{host}:{port}/docs")
