@@ -542,3 +542,24 @@ dismiss 後 open 為 0。dismiss 是對現有警示的處置，不改任何程�
 **驗證**：`uv run --locked --python 3.12 --extra mcp --extra ui python -m pytest tests/test_agent_client.py tests/test_adaptors/test_enhance_via_agent_client.py` 126 passed（新增 `test_default_anthropic_model_does_not_get_temperature_that_would_400` 與 8 格型號判斷）；`tests/test_agent_client.py` 加進 `tools/fork_product_tests.txt`。
 
 **何時重看**：上游改了預設模型或 `_call_api` 的 Anthropic 分支；或 Anthropic 調整哪些型號接受 sampling 參數。
+
+## 2026-11-25：certifi 更新與 anthropic 安裝來源衝突
+
+**certifi**：本輪 `tools/check_dependency_freshness.py` 與 [PyPI](https://pypi.org/project/certifi/2026.11.20/) 都顯示最新版本仍為 `2026.11.20`（11 月 20 日發布，並非 11 月 22 日後的新版本）。原定 48 小時冷卻期已過，將 `requirements.txt` 的 `certifi==2026.10.19` 更新為 `certifi==2026.11.20`，移除對應 deferral 與已完成的 roadmap 列。`uv.lock` 的 certifi 保留 `2026.10.19`；本輪只更新 requirements 宣告，未宣稱鎖定的產品環境也已升級。
+
+**anthropic 衝突**：`git grep -n "anthropic[=>]"` 確認根目錄 `requirements.txt:2` 是 `anthropic==0.40.0`，`pyproject.toml:53` 是 `anthropic>=0.76.0`。這是既有上游宣告不一致，本輪不改 SDK 或產品行為。安裝時沒有全域優先順序，取決於入口：
+
+```text
+pip install -r requirements.txt / bootstrap_dev.ps1 -All
+  -> requirements.txt -> anthropic 0.40.0
+pip install -e . / 從原始碼建置 wheel
+  -> pyproject.toml -> anthropic >=0.76.0（由解析器選版本）
+fork-product-tests.yml: uv sync --locked --extra mcp --extra ui
+  -> pyproject.toml + uv.lock -> anthropic 0.76.0
+dev_check.ps1 / ci.yml
+  -> requirements-dev.txt -> 不安裝 anthropic
+```
+
+同一次安裝若同時要求 `-r requirements.txt -e .`，兩個範圍沒有交集，解析應失敗，並非某份檔案覆蓋另一份；分次安裝也不能把最後裝入的版本當成相容性證據。重查觸發條件與驗收集中記在 `docs/fork/ROADMAP.md`：上游統一版本、鎖檔更新 SDK，或需要從 requirements 安裝完整產品時，先以真實 SDK 驗證 enhancement／agent-client 路徑再統一。
+
+**升級驗證**：`uv pip compile requirements.txt --python-version 3.10` 解析成功（exit 0）；在本工作樹 `.venv` 安裝 certifi 2026.11.20，使用其 CA bundle 建立 `ssl.create_default_context`，載入 113 張 CA 憑證，對 PyPI JSON 端點的 HTTPS 請求回應 200。這是 CA 載入與真實 TLS 連線驗證，不代表完整產品回歸或所有網站的信任鏈都已驗過。

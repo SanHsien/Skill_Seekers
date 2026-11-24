@@ -10,11 +10,11 @@
 | 項目 | 為什麼 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
 | 推送 2026-11-22 的 Actions 用量削減後，在 Actions 頁重新啟用並觀察兩週 | GitHub 以用量為由停用本 fork 的 Actions；API 仍顯示 enabled，看不出停用；門檻沒有官方數字 | 維護者在 https://github.com/SanHsien/Skill_Seekers/actions 按 Enable；第一個 push run 只有 `test (windows / py3.10)`、`py3.14` 兩格；之後 14 天每天 `gh run list -R SanHsien/Skill_Seekers -L 5` 都有新 run | 維護者＋Claude Sonnet | docs/DECISIONS.md「2026-11-22：GitHub suspended Actions on this fork」 |
-| 2026-11-22T23:37Z 之後把 `requirements.txt` 的 `certifi` 升到 2026.11.20，並刪掉它的 deferral | 2026-11-22 審查時還在 48 小時冷卻期內；這筆 deferral 要等下一版 certifi 才會自動失效，不靠這一列會被一直蓋住 | `uv pip compile requirements.txt --python-version 3.10` 可解；`check_dependency_freshness.py` 的 certifi 列是 OK | Claude Sonnet | `.github/dependency-deferrals.json` certifi；docs/DECISIONS.md「2026-11-22：依賴新鮮度檢查改為查不到即失敗」 |
 
 ## 中期：等條件成立再做
 | 項目 | 觸發條件 | 驗收方式 | 建議執行者 | 證據 |
 | --- | --- | --- | --- | --- |
+| 統一上游 anthropic 宣告衝突 | 上游統一版本、`uv.lock` 更新 anthropic，或需要用 `requirements.txt` 安裝完整產品 | 對擬採 SDK 跑真實 SDK 的 enhancement／agent-client 回歸、Python 3.10 解析與 `dev_check`；確認 `pip install -r requirements.txt -e .` 可共同解析才改宣告 | Codex | docs/DECISIONS.md「2026-11-25：certifi 更新與 anthropic 安裝來源衝突」 |
 | 修補或重評 chromadb 依賴 | patched version 出現、新版可用，或本專案開始提供 ChromaDB HTTP／改變 HttpClient 暴露面 | 查 `gh api repos/SanHsien/Skill_Seekers/dependabot/alerts?state=open` 的 first_patched_version；最小鎖檔更新後跑 Chroma adapter 測試與 gate，核對告警 state=fixed；無修補時維持已 dismiss（2026-11-08 維護者指示），出現修補版時重開並升級 | Claude Opus | docs/DECISIONS.md「2026-10-28」「2026-11-08」chromadb；src/skill_seekers/cli/adaptors/chroma.py:289、310 |
 | 跟隨上游停用 Python 3.10 | 上游提高 `requires-python` 或 CI 矩陣移除 3.10；或 Pillow／filelock 發布支援 3.10 的修補版 | 參考 `7393009` 改 `requires-python`、CI、文件並重新產生鎖檔；`dev_check` 綠，核對 Pillow 與 filelock 的 3.10 分支警示（2026-11-08 的群組與 2026-11-12 的 #489、#490 現皆為 dismissed）已由重掃關閉為 fixed | Claude Opus | docs/DECISIONS.md「2026-11-04（續）」「2026-11-08」「2026-11-12：Pillow 新警示」 |
 | 隨選定追蹤線採用上游修正 | 上游合併既有待審 PR，或新增 commit 命中本線功能 | 逐筆核對 MCP null 參數與 provider 行為，Python 最低版本跟隨上游，保留允許路徑與發布 guard；產品回歸相對基準無新增失敗，維護 gate 通過才更新水位 | Codex | docs/DECISIONS.md「2026-10-24」PR／issue 軸；tools/upstream_baseline.json |
